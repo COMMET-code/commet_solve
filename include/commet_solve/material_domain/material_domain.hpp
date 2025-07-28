@@ -1,0 +1,84 @@
+#ifndef INCLUDE_MATERIAL_DOMAIN_MATERIAL_DOMAIN_HPP_
+#define INCLUDE_MATERIAL_DOMAIN_MATERIAL_DOMAIN_HPP_
+
+#include <unordered_map>
+
+#include <deal.II/base/symmetric_tensor.h>
+#include <deal.II/base/tensor.h>
+#include <deal.II/base/types.h>
+
+#include "../types.hpp"
+#include "../utilities.hpp"
+
+namespace commet_solve
+{
+
+using namespace dealii;
+
+template <int dim, typename Number = double>
+struct MinimalMaterialPointData
+{
+	Tensor<2, dim, Number> F;
+	Number psi;
+	SymmetricTensor<2, dim, Number> tau;
+	SymmetricTensor<4, dim, Number> cc;
+};
+
+enum class MaterialDomainState
+{
+	OPEN,
+	CLOSED
+};
+
+/**
+ * @brief This holds all the data for the material points of a given domain.
+ * It also manages any updating of those material points (ie constitutive behaviour)
+ */
+template <int dim, typename Number = double>
+class MaterialDomain
+{
+  public:
+	MaterialDomain()
+		: open_or_closed(MaterialDomainState::OPEN) {};
+	MaterialDomain(MaterialDomain &&) = delete;
+	MaterialDomain(const MaterialDomain &) = delete;
+	MaterialDomain &operator=(MaterialDomain &&) = delete;
+	MaterialDomain &operator=(const MaterialDomain &) = delete;
+	~MaterialDomain() = default;
+
+	void set_dt(const Number &new_dt)
+	{
+		dt = new_dt;
+	};
+	Number get_dt()
+	{
+		return dt;
+	};
+
+	virtual void add_entry(const dealii::types::global_cell_index &cell, const unsigned int &qp) = 0;
+
+	virtual void update_F(const dealii::types::global_cell_index &cell,
+						  const unsigned int &qp,
+						  const Tensor<2, dim, Number> &F) = 0;
+
+	virtual void get_vals(const dealii::types::global_cell_index &cell,
+						  const unsigned int &qp,
+						  Tensor<2, dim, Number> &F,
+						  Number &psi,
+						  SymmetricTensor<2, dim, Number> &tau,
+						  SymmetricTensor<4, dim, Number> &cc) = 0;
+
+	virtual void compute_constitutive_behaviour() = 0;
+
+	virtual void close() {};
+
+  protected:
+	Number dt;
+	MaterialDomainState open_or_closed;
+
+  private:
+};
+
+} // namespace commet_solve
+
+#endif // INCLUDE_MATERIAL_DOMAIN_MATERIAL_DOMAIN_HPP_

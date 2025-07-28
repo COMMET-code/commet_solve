@@ -1,0 +1,659 @@
+#ifndef INCLUDE_COMMET_SOLVE_SOLVER_HPP_
+#define INCLUDE_COMMET_SOLVE_SOLVER_HPP_
+
+#include "boundary_conditions/dirichlet_bc.hpp"
+#include "config.hpp"
+#include "fe_data/fe_data.hpp"
+#include "material_domain/material_domain.hpp"
+#include "time.hpp"
+
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <nlohmann/json.hpp>
+
+#include <deal.II/numerics/data_out.h>
+
+#include <deal.II/base/mpi.h>
+#include <deal.II/base/timer.h>
+#include <deal.II/dofs/dof_handler.h>
+#include <deal.II/dofs/dof_tools.h>
+#include <deal.II/grid/tria.h>
+#include <deal.II/lac/affine_constraints.h>
+#include <deal.II/lac/dynamic_sparsity_pattern.h>
+#include <deal.II/lac/sparsity_tools.h>
+#include <deal.II/numerics/data_component_interpretation.h>
+
+#include <deal.II/base/conditional_ostream.h>
+
+#include <deal.II/base/function.h>
+
+#include <deal.II/numerics/vector_tools.h>
+
+#include <deal.II/fe/fe_q.h>
+#include <deal.II/fe/fe_system.h>
+#include <deal.II/fe/fe_values.h>
+#include <sstream>
+
+#include <deal.II/fe/fe_simplex_p.h>
+#include <deal.II/fe/mapping_fe.h>
+#include <deal.II/physics/elasticity/kinematics.h>
+#include <deal.II/physics/elasticity/standard_tensors.h>
+
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/hp/fe_collection.h>
+#include <deal.II/hp/fe_values.h>
+#include <deal.II/hp/mapping_collection.h>
+#include <deal.II/hp/q_collection.h>
+
+#include <deal.II/base/data_out_base.h>
+#include <vector>
+
+#include "stage.hpp"
+
+namespace commet_solve
+{
+
+using namespace dealii;
+using json = nlohmann::json;
+
+template <int dim, typename Number = double>
+class FiniteStrainSolver
+{
+  public:
+	FiniteStrainSolver(Triangulation<dim> *tri, Time<Number> &time, const unsigned int &order = 1);
+	FiniteStrainSolver(FiniteStrainSolver &&) = delete;
+	FiniteStrainSolver(const FiniteStrainSolver &) = delete;
+	FiniteStrainSolver &operator=(FiniteStrainSolver &&) = delete;
+	FiniteStrainSolver &operator=(const FiniteStrainSolver &) = delete;
+	~FiniteStrainSolver()
+	{
+		solver_timer.print_summary();
+
+		pcout << timer_stream.str() << "\n";
+
+		// LOGGER.info("Compute time data:\n" + timer_stream.str());
+	};
+
+	void add_material_domain(const unsigned int &material_id, std::unique_ptr<MaterialDomain<dim, Number>> mat)
+	{
+		material_domains[material_id] = move(mat);
+	}
+
+	void add_stage(std::unique_ptr<Stage<dim, Number>> stage)
+	{
+		// material_domains[material_id] = move(mat);
+		this->stages.emplace_back(move(stage));
+	}
+	void initialize();
+	// void setup_system_with_constraints();
+	void setup_system_with_constraints(Stage<dim, Number> *stage);
+	void assemble_linear_system();
+	void solve_linear_system();
+	void output();
+	void nr(Stage<dim, Number> *stage);
+	void increment_constraints(Stage<dim, Number> *stage);
+	void homogeneous_constraints();
+	void write_problem_size();
+	void write_compute_times();
+	void solve();
+
+	void add_dbc(std::unique_ptr<DirichletBC<dim>> dbc)
+	{
+		dbcs.push_back(move(dbc));
+	}
+
+  private:
+	DoFHandler<dim> df;
+	Time<Number> time;
+	MPI_Comm mpi_communicator;
+	const unsigned int pid;
+	ConditionalOStream pcout;
+
+	const hp::MappingCollection<dim> mapping;
+	const hp::FECollection<dim> fe;
+	const hp::QCollection<dim> quadrature_formula;
+
+	std::map<unsigned int, std::unique_ptr<MaterialDomain<dim, Number>>> material_domains;
+	std::vector<std::unique_ptr<DirichletBC<dim, Number>>> dbcs;
+	std::vector<std::unique_ptr<Stage<dim, Number>>> stages;
+
+	FEData<dim, Number> fe_data;
+
+	IndexSet locally_owned_dofs;
+	IndexSet locally_relevant_dofs;
+
+	AffineConstraints<Number> constraints;
+	AffineConstraints<Number> dummy_constraints;
+
+	LA::MPI::SparseMatrix system_matrix;
+	LA::MPI::Vector locally_relevant_u;
+	LA::MPI::Vector locally_owned_u;
+	LA::MPI::Vector locally_owned_du;
+	LA::MPI::Vector system_rhs;
+
+	std::ostringstream timer_stream;
+	TimerOutput solver_timer;
+
+	std::vector<std::pair<Number, std::string>> times_and_names;
+};
+
+template <int dim, typename Number>
+FiniteStrainSolver<dim, Number>::FiniteStrainSolver(Triangulation<dim> *tri,
+													Time<Number> &time,
+													const unsigned int &order)
+	: df(*tri)
+	, time(time)
+	, mpi_communicator(MPI_COMM_WORLD)
+	, pid(Utilities::MPI::this_mpi_process(mpi_communicator))
+	, pcout(std::cout, (pid == 0))
+	, mapping(MappingFE<dim>(FE_SimplexP<dim>(1)), MappingFE<dim>(FE_Q<dim>(1)))
+	, fe(FESystem<dim, dim>(FE_SimplexP<dim>(order), dim), FESystem<dim, dim>(FE_Q<dim>(order), dim))
+	, quadrature_formula(QGaussSimplex<dim>(order + 1), QGauss<dim>(order + 1))
+	, solver_timer(timer_stream, TimerOutput::summary, TimerOutput::wall_times)
+{
+
+	TimerOutput::Scope section(solver_timer, "FiniteStrainSolver_constructor");
+	for (const auto &cell : df.active_cell_iterators())
+		if (cell->is_locally_owned())
+		{
+			if (cell->reference_cell() == ReferenceCells::Tetrahedron)
+				cell->set_active_fe_index(0);
+			else if (cell->reference_cell() == ReferenceCells::Hexahedron)
+				cell->set_active_fe_index(1);
+			else
+				DEAL_II_NOT_IMPLEMENTED();
+		}
+
+	df.distribute_dofs(fe);
+	pcout << "Number of elements: " << df.get_triangulation().n_global_active_cells() << std::endl;
+	pcout << "Number of degrees of freedom: " << df.n_dofs() << std::endl;
+
+	locally_owned_dofs = df.locally_owned_dofs();
+	locally_relevant_dofs = DoFTools::extract_locally_relevant_dofs(df);
+
+	// locally_relevant_but_not_owned_dofs = locally_relevant_dofs;
+	// locally_relevant_but_not_owned_dofs.subtract_set(locally_owned_dofs);
+	//
+	//
+
+	locally_relevant_u.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+	system_rhs.reinit(locally_owned_dofs, mpi_communicator);
+	locally_owned_du.reinit(locally_owned_dofs, mpi_communicator);
+	locally_owned_u.reinit(locally_owned_dofs, mpi_communicator);
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::solve()
+{
+    this->write_problem_size();
+	output();
+	unsigned int count = 0;
+    {
+
+        TimerOutput::Scope section(solver_timer, "solve_problem_total");
+        for (auto &stage : this->stages)
+        {
+
+            count++;
+            pcout << "===============================\n"
+                     "============Loading stage " +
+                         std::to_string(count) +
+                         "===================\n"
+                         "===============================\n";
+
+            this->time.set_end(stage->end_time);
+            this->time.set_dt(stage->dt);
+
+            this->setup_system_with_constraints(stage.get());
+            while (not time.finished())
+            {
+
+                this->time.increment();
+                pcout << "Time step: " << time.get_timestep() << "\tTime: " << time.current()
+                      << "\t Delta t: " << time.get_delta_t() << std::endl;
+
+                this->nr(stage.get());
+                this->output();
+                pcout << "\n";
+            }
+        }
+
+    }
+
+    this->write_compute_times();
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::setup_system_with_constraints(Stage<dim, Number> *stage)
+{
+
+	TimerOutput::Scope section(solver_timer, "setup_system_with_constraints");
+	this->constraints.clear();
+	this->constraints.reinit(locally_owned_dofs, locally_relevant_dofs);
+
+	for (const auto &dbc : stage->get_dbcs())
+		dbc->apply(df, constraints, time.current(), time.get_delta_t());
+
+	// ComponentMask prescribed_indices(dim, true);
+
+	// std::vector<double> prescribed_values_left(dim, 0.);
+	// Functions::ConstantFunction<dim> prescribed_function_left(prescribed_values_left);
+
+	// VectorTools::interpolate_boundary_values(df, 1, prescribed_function_left, constraints, prescribed_indices);
+
+	// std::vector<double> prescribed_values_right(dim, 0.);
+	// // prescribed_values_right.at(0) = 1;
+	// // prescribed_values_right.at(0) = 0.5;
+	// prescribed_values_right.at(0) = time.get_delta_t();
+	// Functions::ConstantFunction<dim> prescribed_function_right(prescribed_values_right);
+
+	// VectorTools::interpolate_boundary_values(df, 4, prescribed_function_right, constraints, prescribed_indices);
+
+	this->constraints.close();
+
+	DynamicSparsityPattern dsp(locally_relevant_dofs);
+	DoFTools::make_sparsity_pattern(df,
+									dsp,
+									constraints,
+									/*keep_constrained_dofs = */ false);
+	// /*keep_constrained_dofs = */ true);
+	// sparsity_pattern.copy_from(dsp);
+	//
+	SparsityTools::distribute_sparsity_pattern(dsp, df.locally_owned_dofs(), mpi_communicator, locally_relevant_dofs);
+	system_matrix.reinit(locally_owned_dofs, locally_owned_dofs, dsp, mpi_communicator);
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::increment_constraints(Stage<dim, Number> *stage)
+{
+
+	TimerOutput::Scope section(solver_timer, "increment_constraints");
+	this->constraints.clear();
+	this->constraints.reinit(locally_owned_dofs, locally_relevant_dofs);
+
+	for (const auto &dbc : stage->get_dbcs())
+		dbc->apply(df, constraints, time.current(), time.get_delta_t());
+
+	// ComponentMask prescribed_indices(dim, true);
+
+	// std::vector<double> prescribed_values_left(dim, 0.);
+	// Functions::ConstantFunction<dim> prescribed_function_left(prescribed_values_left);
+	// VectorTools::interpolate_boundary_values(df, 1, prescribed_function_left, constraints, prescribed_indices);
+
+	// std::vector<double> prescribed_values_right(dim, 0.);
+	// prescribed_values_right.at(0) = time.get_delta_t();
+	// Functions::ConstantFunction<dim> prescribed_function_right(prescribed_values_right);
+	// VectorTools::interpolate_boundary_values(df, 4, prescribed_function_right, constraints, prescribed_indices);
+
+	this->constraints.close();
+
+	// DynamicSparsityPattern dsp(locally_relevant_dofs);
+	// DoFTools::make_sparsity_pattern(df,
+	// 								dsp,
+	// 								constraints,
+	// 								/*keep_constrained_dofs = */ false);
+	// // /*keep_constrained_dofs = */ true);
+	// // sparsity_pattern.copy_from(dsp);
+	// //
+	// SparsityTools::distribute_sparsity_pattern(dsp, df.locally_owned_dofs(), mpi_communicator,
+	// locally_relevant_dofs); system_matrix.reinit(locally_owned_dofs, locally_owned_dofs, dsp, mpi_communicator);
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::initialize()
+{
+
+	TimerOutput::Scope section(solver_timer, "initialize");
+	hp::FEValues<dim> hp_fe_values(
+		mapping, fe, quadrature_formula, update_values | update_gradients | update_JxW_values);
+
+	std::vector<types::global_dof_index> local_dof_indices;
+
+	for (const auto &cell : df.active_cell_iterators())
+		if (cell->is_locally_owned())
+		{
+			hp_fe_values.reinit(cell);
+			types::global_cell_index cell_id = cell->global_active_cell_index();
+			const auto &fe_values = hp_fe_values.get_present_fe_values();
+
+			const unsigned int qps_per_cell = fe_values.quadrature_point_indices().size();
+			const unsigned int dofs_per_cell = cell->get_fe().n_dofs_per_cell();
+
+			const unsigned int nodes_per_cell = dofs_per_cell / dim;
+
+			local_dof_indices.resize(dofs_per_cell);
+			cell->get_dof_indices(local_dof_indices);
+
+			std::vector<std::vector<Number>> N(qps_per_cell, std::vector<Number>(nodes_per_cell));
+
+			std::vector<std::vector<Tensor<1, dim, Number>>> B(qps_per_cell,
+															   std::vector<Tensor<1, dim, Number>>(nodes_per_cell));
+
+			for (const unsigned int qp : fe_values.quadrature_point_indices())
+			{
+				for (unsigned int i = 0; i < nodes_per_cell; i++)
+				{
+					const unsigned int i_dof = i * dim;
+					N.at(qp).at(i) = fe_values.shape_value(i_dof, qp);
+					B.at(qp).at(i) = fe_values.shape_grad(i_dof, qp);
+					this->material_domains.at(cell->material_id())->add_entry(cell_id, qp);
+				}
+			}
+
+			fe_data.add_cell(CellData<dim, Number>(cell_id,
+												   cell->material_id(),
+												   nodes_per_cell,
+												   qps_per_cell,
+												   local_dof_indices,
+												   fe_values.get_JxW_values(),
+												   N,
+												   B));
+		}
+
+	for (auto &[domain_id, material_domain] : this->material_domains)
+	{
+		material_domain->close();
+	}
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::assemble_linear_system()
+{
+
+	TimerOutput::Scope section(solver_timer, "assemble_linear_system");
+	system_matrix = 0;
+	system_rhs = 0;
+
+	std::vector<Number> cell_u;
+	std::vector<Tensor<1, dim, Number>> cell_u_vecs;
+
+	std::vector<Tensor<1, dim, Number>> spatial_B;
+
+	Tensor<2, dim, Number> F;
+	Tensor<2, dim, Number> F_inv_T;
+	Number psi;
+	SymmetricTensor<2, dim, Number> tau;
+	Tensor<3, dim, Number> intermediate;
+	Number geom_stiffness;
+	SymmetricTensor<4, dim, Number> cc;
+
+	Tensor<1, dim, Number> node_res;
+	Tensor<2, dim, Number> node_stiffness;
+
+	FullMatrix<double> cell_matrix;
+	Vector<double> cell_rhs;
+
+	{
+		TimerOutput::Scope section_f(solver_timer, "assemble_linear_system_update_F");
+		for (const CellData<dim, Number> &cell_data : this->fe_data.get_cell_data())
+		{
+			std::unique_ptr<MaterialDomain<dim, Number>> &mat_domain = this->material_domains.at(cell_data.material_id);
+			cell_u.resize(cell_data.n_nodes * dim);
+			cell_u_vecs.resize(cell_data.n_nodes);
+
+			locally_relevant_u.extract_subvector_to(cell_data.global_dofs, cell_u);
+
+			for (unsigned int i_node = 0; i_node < cell_data.n_nodes; i_node++)
+				for (unsigned int i_comp = 0; i_comp < dim; i_comp++)
+					cell_u_vecs.at(i_node)[i_comp] = cell_u[i_node * dim + i_comp];
+
+			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
+			{
+				F = Physics::Elasticity::StandardTensors<dim>::I;
+
+				for (unsigned int i_node = 0; i_node < cell_data.n_nodes; i_node++)
+					F += outer_product(cell_u_vecs.at(i_node), cell_data.B.at(qp).at(i_node));
+
+				mat_domain->update_F(cell_data.id, qp, F);
+			}
+		}
+	}
+
+	{
+		TimerOutput::Scope section_c(solver_timer, "assemble_linear_system_constitutive_update");
+		for (auto &[mat_id, mat_domain] : this->material_domains)
+		{
+			mat_domain->compute_constitutive_behaviour();
+		}
+	}
+
+	{
+		TimerOutput::Scope section_c(solver_timer, "assemble_linear_system_compute_el_contribution");
+		for (const CellData<dim, Number> &cell_data : this->fe_data.get_cell_data())
+		{
+			std::unique_ptr<MaterialDomain<dim, Number>> &mat_domain = this->material_domains.at(cell_data.material_id);
+			cell_matrix.reinit(cell_data.n_nodes * dim, cell_data.n_nodes * dim);
+			cell_rhs.reinit(cell_data.n_nodes * dim);
+			spatial_B.resize(cell_data.n_nodes);
+			cell_matrix = 0;
+			cell_rhs = 0;
+
+			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
+			{
+				// mat_domain.get_vals(cell_data.id, qp, F, psi, tau, cc);
+				mat_domain->get_vals(cell_data.id, qp, F, psi, tau, cc);
+
+				F_inv_T = invert(transpose(F));
+
+				for (unsigned int i = 0; i < cell_data.n_nodes; i++)
+					spatial_B.at(i) = F_inv_T * cell_data.B.at(qp).at(i);
+
+				for (unsigned int i = 0; i < cell_data.n_nodes; i++)
+				{
+
+					node_res = tau * spatial_B.at(i) * cell_data.jxw.at(qp);
+					for (unsigned int i_comp = 0; i_comp < dim; i_comp++)
+						cell_rhs(dim * i + i_comp) += -node_res[i_comp];
+
+					intermediate = spatial_B.at(i) * cc * cell_data.jxw.at(qp);
+					for (unsigned int j = 0; j < cell_data.n_nodes; j++)
+					{
+
+						node_stiffness = intermediate * spatial_B.at(j);
+						geom_stiffness = spatial_B.at(j) * node_res;
+
+						for (unsigned int i_comp = 0; i_comp < dim; i_comp++)
+						{
+
+							cell_matrix(dim * i + i_comp, dim * j + i_comp) +=
+								geom_stiffness + node_stiffness[i_comp][i_comp];
+							for (unsigned int j_comp = i_comp + 1; j_comp < dim; j_comp++)
+							{
+
+								cell_matrix(dim * i + i_comp, dim * j + j_comp) += node_stiffness[i_comp][j_comp];
+								cell_matrix(dim * j + j_comp, dim * i + i_comp) += node_stiffness[i_comp][j_comp];
+							}
+						}
+					}
+				}
+			}
+
+			// std::cout << "cell_data.global_dofs";
+			// for (const auto &v : cell_data.global_dofs)
+			//   std::cout << v;
+			// std::cout << std::endl;
+
+			constraints.distribute_local_to_global(
+				// cell_matrix, cell_rhs, cell_data.global_dofs(), system_matrix,
+				cell_matrix,
+				cell_rhs,
+				cell_data.global_dofs,
+				system_matrix,
+				system_rhs,
+				/*use_inhomogeneities_for_rhs*/ false);
+		}
+	}
+
+	{
+		TimerOutput::Scope section_compress(solver_timer, "assemble_linear_system_compress");
+		system_matrix.compress(VectorOperation::add);
+		system_rhs.compress(VectorOperation::add);
+	}
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::solve_linear_system()
+{
+
+	TimerOutput::Scope section(solver_timer, "solve_linear_system");
+	const Number tol_mult = 1e-6;
+	SolverControl solver_control(system_matrix.m(), tol_mult * system_rhs.l2_norm());
+	PETScWrappers::SolverCG solver(solver_control);
+	PETScWrappers::PreconditionJacobi preconditioner(system_matrix);
+	solver.solve(system_matrix, locally_owned_du, system_rhs, preconditioner);
+	constraints.distribute(locally_owned_du);
+	this->locally_owned_u += locally_owned_du;
+
+	locally_relevant_u = locally_owned_u;
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::output()
+{
+
+	TimerOutput::Scope section(solver_timer, "output_linear_system");
+	DataOut<dim> data_out;
+	DataOutBase::VtkFlags flags;
+	flags.write_higher_order_cells = true;
+	data_out.set_flags(flags);
+
+	std::vector<std::string> solution_names(dim, "u");
+
+	std::vector<DataComponentInterpretation::DataComponentInterpretation> interpretation(
+		dim, DataComponentInterpretation::component_is_part_of_vector);
+
+	data_out.add_data_vector(df, locally_relevant_u, solution_names, interpretation);
+
+	data_out.build_patches(mapping, fe.max_degree(), DataOut<dim>::curved_inner_cells);
+	// data_out.build_patches(mapping, 1, DataOut<dim>::curved_inner_cells);
+
+	// const unsigned int n_digits = 4;
+	// const std::string base_vtu_name = "solution";
+	// std::ostringstream ss;
+	// ss << std::setw(n_digits) << std::setfill('0') << 0;
+	// const std::string rel_vtu_name = base_vtu_name + "_" + ss.str() + ".pvtu";
+	// // const string name = output_path.string() + "/" + base_vtu_name;
+	// const std::string name = "./" + base_vtu_name;
+
+	// data_out.write_vtu_with_pvtu_record("./", base_vtu_name, 0, mpi_communicator, n_digits);
+	// // data_out_faces.write_vtu_with_pvtu_record(
+	// // 	output_path.string() + "/", base_vtu_name, time.get_timestep(),
+	// // mpi_communicator, n_digits);
+
+	// // if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0) {
+	// //   times_and_names.emplace_back(time.current(), rel_vtu_name);
+	// //   const string pvd_name =  "./solution.pvd";
+	// //   ofstream pvd_output(pvd_name);
+	// //   DataOutBase::write_pvd_record(pvd_output, times_and_names);
+	// // }
+
+	const unsigned int n_digits = 4;
+	const std::string base_vtu_name = "solution";
+	std::ostringstream ss;
+	ss << std::setw(n_digits) << std::setfill('0') << time.get_timestep();
+	const std::string rel_vtu_name = base_vtu_name + "_" + ss.str() + ".pvtu";
+	const std::string name = "./" + base_vtu_name;
+
+	data_out.write_vtu_with_pvtu_record("./", base_vtu_name, time.get_timestep(), mpi_communicator, n_digits);
+	// data_out_faces.write_vtu_with_pvtu_record(
+	// 	output_path.string() + "/", base_vtu_name, time.get_timestep(), mpi_communicator, n_digits);
+
+	if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+	{
+		times_and_names.emplace_back(time.current(), rel_vtu_name);
+		// const string pvd_name = output_path.string() + "/solution.pvd";
+		const std::string pvd_name = "./solution.pvd";
+		std::ofstream pvd_output(pvd_name);
+		DataOutBase::write_pvd_record(pvd_output, times_and_names);
+	}
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::nr(Stage<dim, Number> *stage)
+{
+
+	// this->setup_system_with_constraints();
+	this->increment_constraints(stage);
+	// this->assemble_rhs_first_step();
+	this->assemble_linear_system();
+	const double initial_residual = this->system_rhs.l2_norm();
+	this->solve_linear_system();
+	this->homogeneous_constraints();
+	this->assemble_linear_system();
+
+	// this->constitutive_update();
+	// this->assemble_rhs();
+
+	unsigned int iteration = 0;
+
+	double current_residual = this->system_rhs.l2_norm();
+	pcout << "Iteration: " << iteration << "\tR_0: " << initial_residual << "\t R: " << current_residual << std::endl;
+
+	while (current_residual / initial_residual > 1e-6 && iteration < 7)
+	{
+
+		this->solve_linear_system();
+		this->assemble_linear_system();
+		current_residual = this->system_rhs.l2_norm();
+		iteration++;
+		pcout << "Iteration: " << iteration << "\tR_0: " << initial_residual << "\t R" << iteration << ": "
+			  << current_residual << std::endl;
+	}
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::homogeneous_constraints()
+{
+
+	this->dummy_constraints.clear();
+	this->dummy_constraints.copy_from(this->constraints);
+	this->constraints.clear();
+	this->constraints.copy_from(this->dummy_constraints);
+
+	for (const auto &line : this->constraints.get_lines())
+		this->constraints.set_inhomogeneity(line.index, 0);
+
+	this->constraints.close();
+}
+
+
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::write_problem_size()
+{
+	if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+	{
+		json problem_size;
+		problem_size["n_elements"] = df.get_triangulation().n_global_active_cells();
+		problem_size["n_dofs"] = df.n_dofs();
+
+		// TODO Consider refactoring out file name to a global const
+		const std::string name = "./problem_size.json";
+		// TODO consider_checking if the file already exists and thinking about if it should be overwritten by default
+		std::ofstream o_file(name);
+		o_file << std::setw(4) << problem_size << std::endl;
+	}
+}
+
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::write_compute_times()
+{
+	if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+	{
+		json compute_times_output;
+
+		for (const auto &item : solver_timer.get_summary_data(TimerOutput::total_wall_time))
+			compute_times_output[item.first] = item.second;
+
+		// const string name = output_path.string() + "/compute_times.json";
+		const std::string name = "./compute_times.json";
+		std::ofstream o_file(name);
+		o_file << std::setw(4) << compute_times_output << std::endl;
+	}
+}
+
+
+} // namespace commet_solve
+
+#endif // INCLUDE_COMMET_SOLVE_SOLVER_HPP_

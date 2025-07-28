@@ -1,0 +1,9 @@
+build/
+notes/
+.cache/
+.nvim/
+*.bak
+.teleignore
+compile_commands.json
+external/libtorch/
+external/libtorch-cxx11abi/
