@@ -6,6 +6,10 @@
 
 #include "commet_solve/boundary_conditions/fully_defined_dbc.hpp"
 #include "commet_solve/boundary_conditions/twist_pull.hpp"
+
+#include "commet_solve/boundary_conditions/constant_nbc.hpp"
+#include "commet_solve/boundary_conditions/pressure_nbc.hpp"
+#include "commet_solve/boundary_conditions/robin_bc.hpp"
 #include <memory>
 
 namespace commet_solve::parse
@@ -24,9 +28,10 @@ static const map<string, dbcs> //
 	DBCS({{"standard", dbcs::standard}, {"pull_twist", dbcs::pull_twist}});
 
 template <int dim, typename Number>
-void parse_dbc(const json &dbc_spec, Stage<dim, Number> *stage)
+void parse_dbc(const json &dbc_spec, Stage<dim, Number> *stage, std::map<std::string, unsigned int> &b_id_map)
 {
-	const unsigned int b_id = compulsory_value<unsigned int>("boundary_id", dbc_spec);
+	// const unsigned int b_id = compulsory_value<unsigned int>("boundary_id", dbc_spec);
+	const unsigned int b_id = b_id_map.at(compulsory_value<std::string>("boundary_id", dbc_spec));
 
 	switch (json_key_to_map_value("type", dbc_spec, DBCS))
 	{
@@ -51,28 +56,69 @@ void parse_dbc(const json &dbc_spec, Stage<dim, Number> *stage)
 	}
 }
 
+enum class nbcs
+{
+	constant,
+	pressure,
+	robin
+};
+static const map<string, nbcs> //
+	NBCS({{"constant", nbcs::constant}, {"pressure", nbcs::pressure}, {"robin", nbcs::robin}});
+template <int dim, typename Number>
+void parse_nbc(const json &nbc_spec, Stage<dim, Number> *stage, std::map<std::string, unsigned int> &b_id_map)
+{
+
+	// const unsigned int b_id = compulsory_value<unsigned int>("boundary_id", nbc_spec);
+	const unsigned int b_id = b_id_map.at(compulsory_value<std::string>("boundary_id", nbc_spec));
+
+	switch (json_key_to_map_value("type", nbc_spec, NBCS))
+	{
+	case nbcs::constant: {
+		stage->add_nbc(make_unique<ConstNeumannBC<dim, Number>>(
+			b_id, compulsory_vector<dim, Number, Tensor<1, dim, Number>>("traction", nbc_spec), stage->end_time));
+		return;
+	}
+	case nbcs::pressure: {
+		stage->add_nbc(make_unique<PressureNeumannBC<dim, Number>>(
+			b_id, compulsory_value<Number>("pressure", nbc_spec), stage->end_time));
+		return;
+	}
+	case nbcs::robin: {
+		stage->add_nbc(make_unique<RobinBC<dim, Number>>(b_id, compulsory_value<Number>("stiffness", nbc_spec)));
+		return;
+	}
+	}
+}
+
 // template <int dim, typename Number>
 // void parse_dbcs(const json & stage_dbc){}
 
 template <int dim, typename Number>
-void parse_stage(const json &stage_spec, FiniteStrainSolver<dim, Number> &solver)
+void parse_stage(const json &stage_spec,
+				 FiniteStrainSolver<dim, Number> &solver,
+				 std::map<std::string, unsigned int> &b_id_map)
 {
 	const Number end_time = value_or_default<Number>("end_time", stage_spec, 1);
 	const Number dt = value_or_default<Number>("time_increment_size", stage_spec, 1);
 	auto stage = make_unique<Stage<dim, Number>>(end_time, dt);
 
 	for (json &dbc_spec : compulsory_value<json>("dirichlet_boundary_conditions", stage_spec))
-		parse_dbc(dbc_spec, stage.get());
+		parse_dbc(dbc_spec, stage.get(), b_id_map);
+
+	for (json &nbc_spec : compulsory_value<json>("neumann_boundary_conditions", stage_spec))
+		parse_nbc(nbc_spec, stage.get(), b_id_map);
 
 	solver.add_stage(move(stage));
 }
 
 template <int dim, typename Number>
-void parse_stages(const json &stage_inp, FiniteStrainSolver<dim, Number> &solver)
+void parse_stages(const json &stage_inp,
+				  FiniteStrainSolver<dim, Number> &solver,
+				  std::map<std::string, unsigned int> &b_id_map)
 {
 
 	for (const auto &stage_spec : stage_inp)
-		parse_stage(stage_spec, solver);
+		parse_stage(stage_spec, solver, b_id_map);
 }
 
 } // namespace commet_solve::parse

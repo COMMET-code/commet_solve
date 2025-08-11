@@ -7,3 +7,12 @@ notes/
 compile_commands.json
 external/libtorch/
 external/libtorch-cxx11abi/
+build_apt/
+build_min/
+random_scripts/
+.jukit/
+external_builds/
+*.vtu
+*.pvtu
+*.pvd
+*.vtk

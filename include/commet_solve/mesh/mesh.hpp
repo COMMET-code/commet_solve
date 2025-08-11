@@ -3,10 +3,19 @@
 
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_tools_geometry.h>
+#include <deal.II/grid/grid_out.h>
 
 namespace commet_solve{
 using namespace dealii;
 
+
+template <unsigned int dim>
+void output_triangulation_vtk(const string &name, const Triangulation<dim> &triangulation)
+{
+    std::ofstream out(name + ".vtk");
+	GridOut grid_out;
+	grid_out.write_vtk(triangulation, out);
+}
 
 
 template <unsigned int dim, typename tri_type>

@@ -2,6 +2,7 @@
 #define INCLUDE_COMMET_SOLVE_STAGE_HPP_
 
 #include "boundary_conditions/dirichlet_bc.hpp"
+#include "boundary_conditions/neumann_bc.hpp"
 #include <vector>
 
 namespace commet_solve
@@ -25,10 +26,17 @@ class Stage
 	{
 		dbcs.push_back(move(dbc));
 	}
-
 	std::vector<std::unique_ptr<DirichletBC<dim, Number>>> &get_dbcs()
 	{
 		return dbcs;
+	};
+	void add_nbc(std::unique_ptr<NeumannBC<dim>> nbc)
+	{
+		nbcs.push_back(move(nbc));
+	}
+	std::vector<std::unique_ptr<NeumannBC<dim, Number>>> &get_nbcs()
+	{
+		return nbcs;
 	};
 
 	const Number end_time;
@@ -36,6 +44,7 @@ class Stage
 
   private:
 	std::vector<std::unique_ptr<DirichletBC<dim, Number>>> dbcs;
+	std::vector<std::unique_ptr<NeumannBC<dim, Number>>> nbcs;
 };
 
 } // namespace commet_solve

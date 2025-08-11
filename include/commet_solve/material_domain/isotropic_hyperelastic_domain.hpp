@@ -1,92 +1,190 @@
 #ifndef INCLUDE_MATERIAL_DOMAIN_ISOTROPIC_HYPERELASTIC_DOMAIN_HPP_
 #define INCLUDE_MATERIAL_DOMAIN_ISOTROPIC_HYPERELASTIC_DOMAIN_HPP_
 
+#include "commet_solve/output/output_flags.hpp"
 #include "material_domain.hpp"
 
+#include <deal.II/base/symmetric_tensor.h>
 #include <deal.II/physics/elasticity/kinematics.h>
 #include <deal.II/physics/elasticity/standard_tensors.h>
 
-namespace commet_solve {
+namespace commet_solve
+{
 
 template <int dim, typename Number = double>
-class IsotropicHyperelasticDomain : public MaterialDomain<dim, Number> {
-public:
-  IsotropicHyperelasticDomain() = default;
-  IsotropicHyperelasticDomain(IsotropicHyperelasticDomain &&) = delete;
-  IsotropicHyperelasticDomain(const IsotropicHyperelasticDomain &) = delete;
-  IsotropicHyperelasticDomain &
-  operator=(IsotropicHyperelasticDomain &&) = delete;
-  IsotropicHyperelasticDomain &
-  operator=(const IsotropicHyperelasticDomain &) = delete;
-  ~IsotropicHyperelasticDomain() = default;
+class IsotropicHyperelasticDomain : public MaterialDomain<dim, Number>
+{
+  public:
+	IsotropicHyperelasticDomain() = default;
+	IsotropicHyperelasticDomain(IsotropicHyperelasticDomain &&) = delete;
+	IsotropicHyperelasticDomain(const IsotropicHyperelasticDomain &) = delete;
+	IsotropicHyperelasticDomain &operator=(IsotropicHyperelasticDomain &&) = delete;
+	IsotropicHyperelasticDomain &operator=(const IsotropicHyperelasticDomain &) = delete;
+	~IsotropicHyperelasticDomain() = default;
 
-  void add_entry(const dealii::types::global_cell_index &cell,
-                 const unsigned int &qp) override {
-    qp_data[{cell, qp}] = MinimalMaterialPointData<dim, Number>();
-  };
+	void add_entry(const dealii::types::global_cell_index &cell, const unsigned int &qp) override
+	{
+		qp_data[{cell, qp}] = MinimalMaterialPointData<dim, Number>();
+	};
 
-  void update_F(const dealii::types::global_cell_index &cell,
-                const unsigned int &qp,
-                const Tensor<2, dim, Number> &F) override {
-    qp_data.at({cell, qp}).F = F;
-  };
 
-  void get_vals(const dealii::types::global_cell_index &cell,
-                const unsigned int &qp, Tensor<2, dim, Number> &F, Number &psi,
-                SymmetricTensor<2, dim, Number> &tau,
-                SymmetricTensor<4, dim, Number> &cc) override {
-    const MinimalMaterialPointData<dim, Number> &point = qp_data.at({cell, qp});
+	void add_entry(const dealii::types::global_cell_index &cell_idx,
+						   const DoFCellAccessor<dim, dim, false> &/*cell*/,
+						   const FEValues<dim, dim> &fe_values,
+						   const ScalarFieldManager<dim, Number> &/*scalar_fields*/,
+						   const VectorFieldManager<dim, Number> &/*vector_fields*/,
+						   const TensorFieldManager<dim, Number> & /*tensor_fields*/) 
+    override{
 
-    F = point.F;
-    psi = point.psi;
-    tau = point.tau;
-    cc = point.cc;
-  };
+        for(unsigned int qp=0; qp<fe_values.n_quadrature_points; qp++)
+            qp_data[{cell_idx, qp}] = MinimalMaterialPointData<dim, Number>();
 
-  void compute_constitutive_behaviour() override {
-    for (auto &[point_key, point_data] : qp_data)
-      this->constitutive_equation(point_data);
-  };
+    };
 
-protected:
-  std::unordered_map<point_index, MinimalMaterialPointData<dim, Number>,
-                     PointIndexHash>
-      qp_data;
 
-  virtual void
-  constitutive_equation(MinimalMaterialPointData<dim, Number> &data) = 0;
+	void update_F(const dealii::types::global_cell_index &cell,
+				  const unsigned int &qp,
+				  const Tensor<2, dim, Number> &F) override
+	{
+		qp_data.at({cell, qp}).F = F;
+	};
 
-private:
+	void get_vals(const dealii::types::global_cell_index &cell,
+				  const unsigned int &qp,
+				  Tensor<2, dim, Number> &F,
+				  Number &psi,
+				  SymmetricTensor<2, dim, Number> &tau,
+				  SymmetricTensor<4, dim, Number> &cc) override
+	{
+		const MinimalMaterialPointData<dim, Number> &point = qp_data.at({cell, qp});
+
+		F = point.F;
+		psi = point.psi;
+		tau = point.tau;
+		cc = point.cc;
+	};
+
+	virtual Number get_scalar_value(const dealii::types::global_cell_index &cell,
+									const unsigned int &qp,
+									const scalar_output_flag &flag) override
+	{
+		switch (flag)
+		{
+		case scalar_output_flag::jacobian:
+			return determinant(qp_data.at({cell, qp}).F);
+		case scalar_output_flag::strain_energy:
+			return qp_data.at({cell, qp}).psi;
+		case scalar_output_flag::I1:
+			return trace(Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F));
+		case scalar_output_flag::I2: {
+			const Tensor<2, dim, Number> b = Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F);
+			return 0.5 * (pow(trace(b), 2) - trace(b * b));
+		}
+		case scalar_output_flag::I3:
+			return pow(determinant(qp_data.at({cell, qp}).F), 2);
+		default:
+			return MaterialDomain<dim, Number>::get_scalar_value(cell, qp, flag);
+		}
+	};
+
+	virtual Tensor<1, dim, Number> get_vector_value(const dealii::types::global_cell_index &cell,
+													const unsigned int &qp,
+													const vector_output_flag &flag) override
+	{
+		switch (flag)
+		{
+		case vector_output_flag::principal_stress_0: {
+			auto vecs_and_vals = eigenvectors(qp_data.at({cell, qp}).tau, SymmetricTensorEigenvectorMethod::jacobi);
+			return vecs_and_vals[0].first * vecs_and_vals[0].second / vecs_and_vals[0].second.norm();
+		}
+		case vector_output_flag::principal_stress_1: {
+			auto vecs_and_vals = eigenvectors(qp_data.at({cell, qp}).tau, SymmetricTensorEigenvectorMethod::jacobi);
+			return vecs_and_vals[1].first * vecs_and_vals[1].second / vecs_and_vals[1].second.norm();
+		}
+		case vector_output_flag::principal_stress_2: {
+			auto vecs_and_vals = eigenvectors(qp_data.at({cell, qp}).tau, SymmetricTensorEigenvectorMethod::jacobi);
+			return vecs_and_vals[2].first * vecs_and_vals[2].second / vecs_and_vals[2].second.norm();
+		}
+		case vector_output_flag::principal_stretch_0: {
+			auto vecs_and_vals = eigenvectors(Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F),
+											  SymmetricTensorEigenvectorMethod::jacobi);
+			return vecs_and_vals[0].first * vecs_and_vals[0].second / vecs_and_vals[0].second.norm();
+		}
+		case vector_output_flag::principal_stretch_1: {
+			auto vecs_and_vals = eigenvectors(Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F),
+											  SymmetricTensorEigenvectorMethod::jacobi);
+			return vecs_and_vals[1].first * vecs_and_vals[1].second / vecs_and_vals[1].second.norm();
+		}
+		case vector_output_flag::principal_stretch_2: {
+			auto vecs_and_vals = eigenvectors(Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F),
+											  SymmetricTensorEigenvectorMethod::jacobi);
+			return vecs_and_vals[2].first * vecs_and_vals[2].second / vecs_and_vals[2].second.norm();
+		}
+		default:
+			return MaterialDomain<dim, Number>::get_vector_value(cell, qp, flag);
+		}
+	};
+
+
+	virtual Tensor<2, dim, Number> get_tensor_value(const dealii::types::global_cell_index &cell,
+													const unsigned int &qp,
+													const tensor_output_flag &flag) override
+	{
+		switch (flag){
+            case tensor_output_flag::kirchhoff_stress: { return qp_data.at({cell, qp}).tau; }
+            case tensor_output_flag::F: { return qp_data.at({cell, qp}).F; }
+            case tensor_output_flag::B: { return Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F); }
+            case tensor_output_flag::C: { return Physics::Elasticity::Kinematics::C(qp_data.at({cell, qp}).F); }
+            case tensor_output_flag::E: { return Physics::Elasticity::Kinematics::E(qp_data.at({cell, qp}).F); }
+            default:
+			return MaterialDomain<dim, Number>::get_tensor_value(cell, qp, flag);
+        }
+	};
+
+	void compute_constitutive_behaviour() override
+	{
+		for (auto &[point_key, point_data] : qp_data)
+			this->constitutive_equation(point_data);
+	};
+
+  protected:
+	std::unordered_map<point_index, MinimalMaterialPointData<dim, Number>, PointIndexHash> qp_data;
+
+	virtual void constitutive_equation(MinimalMaterialPointData<dim, Number> &data) = 0;
+
+  private:
 };
 
 template <int dim, typename Number = double>
-class NeoHookeanDomain : public IsotropicHyperelasticDomain<dim, Number> {
-public:
-  NeoHookeanDomain(const Number &lambda, const Number &mu)
-      : lambda(lambda), mu(mu), lambda_2mu(lambda + 2 * mu) {};
-  NeoHookeanDomain(NeoHookeanDomain &&) = delete;
-  NeoHookeanDomain(const NeoHookeanDomain &) = delete;
-  NeoHookeanDomain &operator=(NeoHookeanDomain &&) = delete;
-  NeoHookeanDomain &operator=(const NeoHookeanDomain &) = delete;
-  ~NeoHookeanDomain() = default;
+class NeoHookeanDomain : public IsotropicHyperelasticDomain<dim, Number>
+{
+  public:
+	NeoHookeanDomain(const Number &lambda, const Number &mu)
+		: lambda(lambda)
+		, mu(mu)
+		, lambda_2mu(lambda + 2 * mu) {};
+	NeoHookeanDomain(NeoHookeanDomain &&) = delete;
+	NeoHookeanDomain(const NeoHookeanDomain &) = delete;
+	NeoHookeanDomain &operator=(NeoHookeanDomain &&) = delete;
+	NeoHookeanDomain &operator=(const NeoHookeanDomain &) = delete;
+	~NeoHookeanDomain() = default;
 
-protected:
-  void
-  constitutive_equation(MinimalMaterialPointData<dim, Number> &data) override {
-    using namespace Physics::Elasticity;
+  protected:
+	void constitutive_equation(MinimalMaterialPointData<dim, Number> &data) override
+	{
+		using namespace Physics::Elasticity;
 
-    const SymmetricTensor<2, dim, Number> B = Kinematics::b(data.F);
-    const Number I1 = dealii::trace(B);
-    const Number I3 = determinant(B);
+		const SymmetricTensor<2, dim, Number> B = Kinematics::b(data.F);
+		const Number I1 = dealii::trace(B);
+		const Number I3 = determinant(B);
 
-    data.psi = (2 * mu * (I1 - 3 - log(I3)) + lambda * (I3 - 1 - log(I3))) / 4.;
-    data.tau = mu * B + (lambda * I3 - lambda_2mu) * StandardTensors<3>::I / 2;
-    data.cc = lambda * I3 * StandardTensors<3>::IxI -
-              (lambda * I3 - lambda_2mu) * StandardTensors<3>::S;
-  };
+		data.psi = (2 * mu * (I1 - 3 - log(I3)) + lambda * (I3 - 1 - log(I3))) / 4.;
+		data.tau = mu * B + (lambda * I3 - lambda_2mu) * StandardTensors<3>::I / 2;
+		data.cc = lambda * I3 * StandardTensors<3>::IxI - (lambda * I3 - lambda_2mu) * StandardTensors<3>::S;
+	};
 
-private:
-  const Number lambda, mu, lambda_2mu;
+  private:
+	const Number lambda, mu, lambda_2mu;
 };
 
 } // namespace commet_solve

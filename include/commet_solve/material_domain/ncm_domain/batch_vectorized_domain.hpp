@@ -2,6 +2,7 @@
 #define INCLUDE_NCM_DOMAIN_BATCH_VECTORIZED_DOMAIN_HPP_
 
 #include "vectorized_domain.hpp"
+#include <algorithm>
 
 namespace commet_solve
 {
@@ -27,6 +28,10 @@ class BatchVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 		while (it_read != this->qp_data.end())
 		{
 
+            if(!F.is_contiguous())
+                std::cout << "F is not contiguous!!!" << std::endl;
+            F = F.contiguous();
+
 			for (unsigned int i = 0; i < this->batch_size; i++)
 			{
 				deal_to_torch_tensor<dim, Number>(i, it_read->second.F, F, TensorLayout::STANDARD);
@@ -37,6 +42,12 @@ class BatchVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 
 			this->evaluate_model(F, structural_vectors, energy, tau, cc);
 
+            if(!tau.is_contiguous())
+                std::cout << "tau is not contiguous!!!" << std::endl;
+            if(!cc.is_contiguous())
+                std::cout << "cc is not contiguous!!!" << std::endl;
+            tau = tau.contiguous();
+            cc = cc.contiguous();
 			for (unsigned int i = 0; i < this->batch_size; i++)
 			{
 				torch_to_deal_tensor<dim, Number>(i, tau, it_write->second.tau, layout);
@@ -52,21 +63,26 @@ class BatchVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 	{
 
 		const at::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
-		F = torch::zeros({batch_size, dim, dim}, options);
-		structural_vectors = torch::zeros({batch_size, 0, dim}, options);
 
-		energy = torch::zeros({batch_size}, options);
+
+        int64_t size = static_cast<int64_t>(this->qp_data.size());
+        size = std::min(size, static_cast<int64_t>(batch_size));
+
+		F = torch::zeros({size, dim, dim}, options);
+		structural_vectors = torch::zeros({size, 0, dim}, options);
+
+		energy = torch::zeros({size}, options);
 
 		switch (this->get_return_tensor_layout())
 		{
 		case TensorLayout::STANDARD: {
-			tau = torch::zeros({batch_size, dim, dim}, options);
-			cc = torch::zeros({batch_size, dim, dim, dim, dim}, options);
+			tau = torch::zeros({size, dim, dim}, options);
+			cc = torch::zeros({size, dim, dim, dim, dim}, options);
 			break;
 		}
 		case TensorLayout::VOIGT: {
-			tau = torch::zeros({batch_size, 6}, options);
-			cc = torch::zeros({batch_size, 6, 6}, options);
+			tau = torch::zeros({size, 6}, options);
+			cc = torch::zeros({size, 6, 6}, options);
 			break;
 		}
 		}

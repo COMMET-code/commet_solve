@@ -89,6 +89,18 @@ class VectorizedMaterialDomain : public MaterialDomain<dim, Number>
 		qp_data[{cell, qp}] = MinimalMaterialPointData<dim, Number>();
 	};
 
+	void add_entry(const dealii::types::global_cell_index &cell_idx,
+						   const DoFCellAccessor<dim, dim, false> &/*cell*/,
+						   const FEValues<dim, dim> &fe_values,
+						   const ScalarFieldManager<dim, Number> &/*scalar_fields*/,
+						   const VectorFieldManager<dim, Number> &/*vector_fields*/,
+						   const TensorFieldManager<dim, Number> & /*tensor_fields*/) 
+    override{
+        for(unsigned int qp=0; qp<fe_values.n_quadrature_points; qp++)
+            qp_data[{cell_idx, qp}] = MinimalMaterialPointData<dim, Number>();
+
+    };
+
 	void update_F(const dealii::types::global_cell_index &cell,
 				  const unsigned int &qp,
 				  const Tensor<2, dim, Number> &F) override
@@ -220,28 +232,32 @@ void VectorizedMaterialDomain<dim, Number>::evaluate_model(const torch::Tensor &
 }
 
 template <int dim, typename Number>
-void VectorizedMaterialDomain<dim, Number>::evaluate_model_from_F(const torch::Tensor &F,
+void VectorizedMaterialDomain<dim, Number>::evaluate_model_from_F(const torch::Tensor &F_mem_safe,
 																  const torch::Tensor &structural_tensors,
 																  torch::Tensor &strain_energy_out,
 																  torch::Tensor &kirchhoff_stress_out,
 																  torch::Tensor &spatial_stiffness_out)
 {
 
+	torch::Tensor F = torch::zeros_like(F_mem_safe);
+	// F.requires_grad_(true);
+	// torch::Tensor Is = torch::zeros_like(F);
+	F.index_put_({t_Slice(), t_Slice(), t_Slice()}, torch::eye(dim));
 	F.requires_grad_(true);
-	torch::Tensor Is = torch::zeros_like(F);
-	Is.index_put_({t_Slice(), t_Slice(), t_Slice()}, torch::eye(dim));
-	Is.requires_grad_(true);
 
-	t_Tensor W_NN = module.run_method("W_NN_from_F", Is, structural_tensors).toTensor();
+	t_Tensor W_NN = module.run_method("W_NN_from_F", F, structural_tensors).toTensor();
 
 	t_Tensor grad_output = torch::ones_like(W_NN);
 
 	t_Tensor H = -torch::autograd::grad({W_NN},
-										{Is},
+										{F},
 										/*grad_outputs=*/{grad_output},
 										/*retain_graph=*/true,
 										/*create_graph=*/true)[0][0];
 	t_Tensor W0 = -W_NN[0].clone();
+
+	F = F_mem_safe.detach().clone();
+	F.requires_grad_(true);
 
 	strain_energy_out = module.run_method("W_NN_from_F", F, structural_tensors).toTensor();
 
@@ -273,13 +289,18 @@ void VectorizedMaterialDomain<dim, Number>::evaluate_model_from_F(const torch::T
 					spatial_stiffness_out.index({t_Slice(), i, j, k, l}) = dP_ij_dF.index({t_Slice(), k, l});
 		}
 
+
+	F = F_mem_safe.detach().clone();
+    F.requires_grad_(false);
+	torch::NoGradGuard no_grad;
+
 	strain_energy_out = strain_energy_out + W0;
 
 	kirchhoff_stress_out = kirchhoff_stress_out + H;
 	kirchhoff_stress_out = torch::einsum("...il,...jl->...ij", {kirchhoff_stress_out, F});
 
 	spatial_stiffness_out = torch::einsum("miJkL,mjJ,mlL->mijkl", {spatial_stiffness_out, F, F});
-	spatial_stiffness_out = spatial_stiffness_out - torch::einsum("mik,mjl->mijkl", {Is, kirchhoff_stress_out});
+	spatial_stiffness_out = spatial_stiffness_out - torch::einsum("ik,mjl->mijkl", {torch::eye(dim), kirchhoff_stress_out});
 }
 
 template <int dim, typename Number>

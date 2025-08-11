@@ -1,0 +1,160 @@
+{
+    "mesh": {
+        /* required: true
+        options:
+            "builtin" -- uses a mesh that the solver generates
+            "read" -- reads a mesh from file
+        */
+        "from": "read",
+        /* required: true (if using builtin)
+        options:
+            "cube" -- generates
+            "cylinder" -- reads a mesh from file
+        */
+        // "path": "new_format_biv_fix_boundaries.json",
+        "path": "./biv_mesh.json",
+        "order": 1,
+        "global_refines": 0
+    },
+    "materials": [
+        {
+            "id": 0,
+            "type": "neohookean",
+            "lambda": 10,
+            "mu": 10
+        }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 1,
+            "dirichlet_boundary_conditions": [
+                {
+                    "type": "standard",
+                    "boundary_id": "LV_TIE_AA",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": "LV_TIE_LA",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": "RV_TIE_PT",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": "RV_TIE_RA",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ],
+            "neumann_boundary_conditions": [
+                {
+                    "type": "pressure",
+                    "boundary_id": "Fluid_Cavity_LV",
+                    "pressure": -0.05
+                },
+                {
+                    "type": "pressure",
+                    "boundary_id": "Fluid_Cavity_RV",
+                    "pressure": -0.05
+                }
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "Exterior_V",
+                //     "stiffness": 0.5
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "LV_TIE_AA",
+                //     "stiffness": 0.1
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "LV_TIE_LA",
+                //     "stiffness": 0.1
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "RV_TIE_PT",
+                //     "stiffness": 0.1
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "RV_TIE_RA",
+                //     "stiffness": 0.1
+                // }
+            ],
+            "robin_boundary_conditions": []
+        }
+    ],
+    "fields": {
+        "scalar": [],
+        "vector": [
+            {
+                "name": "fibres",
+                "type": "element_wise",
+                "path": "fudge_sv_1.json"
+            },
+            {
+                "name": "sheetlet_normal",
+                "type": "element_wise",
+                "path": "fudge_sv_2.json"
+            }
+        ],
+        "tensor": []
+    },
+    "outputs": {
+        "scalar_outputs": [
+            //"strain_energy"
+        ],
+        "vector_outputs": [],
+        "tensor_outputs": [
+            //"kirchhoff_stress",
+            //"C"
+        ]
+    },
+    "miscellaneous": {
+        "output_vtus": true,
+        "nr_threshold": 1e-6,
+        "max_nr_iterations": 7
+    }
+}

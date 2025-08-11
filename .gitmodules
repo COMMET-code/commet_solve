@@ -1,3 +1,18 @@
 [submodule "external/json"]
 	path = external/json
 	url = https://github.com/nlohmann/json.git
+[submodule "external/dealii"]
+	path = external/dealii
+	url = https://github.com/dealii/dealii.git
+[submodule "external/petsc"]
+	path = external/petsc
+	url = https://github.com/petsc/petsc.git
+[submodule "external/p4est"]
+	path = external/p4est
+	url = https://github.com/cburstedde/p4est.git
+[submodule "external/pytorch"]
+	path = external/pytorch
+	url = https://github.com/pytorch/pytorch
+[submodule "external/exprtk"]
+	path = external/exprtk
+	url = https://github.com/ArashPartow/exprtk.git

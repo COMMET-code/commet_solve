@@ -1,0 +1,140 @@
+{
+    "mesh": {
+        /* required: true
+        options:
+            "builtin" -- uses a mesh that the solver generates
+            "read" -- reads a mesh from file
+        */
+        "from": "read",
+        /* required: true (if using builtin)
+        options:
+            "cube" -- generates
+            "cylinder" -- reads a mesh from file
+        */
+        "path": "mesh.json",
+        "order": 1,
+        "global_refines": 3
+    },
+    "materials": [
+        // {
+        //     "id": 0,
+        //     "type": "globally_vectorized_ncm",
+        //     "evaluation_method": "optimized",
+        //     // "evaluation_method": "using_F",
+        //     // "path_to_torchscript": "../../resources/torchscripts/opt/opt-neohookean-micnn-cpu.torchscript"
+        //     "path_to_torchscript": "opt-neohookean-micnn-cpu.torchscript"
+        // }
+        // {
+        //     "id": 0,
+        //     "type": "batch_vectorized_ncm",
+        //     "evaluation_method": "optimized",
+        //     "batch_size": 256,
+        //     "path_to_torchscript": "../resources/torchscripts/opt/opt-neohookean-micnn-cpu.torchscript"
+        // }
+        {
+            "id": 0,
+            "type": "neohookean",
+            "mu": 2,
+            "lambda": 2
+        }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.1,
+            "dirichlet_boundary_conditions": [
+                {
+                    "type": "standard",
+                    "boundary_id": "left",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                }
+                /*{
+                    "type": "standard",
+                    "boundary_id": "right",
+                    "components": [
+                        //0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        //0,
+                        0,
+                        0
+                    ]
+                },*/
+                /*{
+                    "type": "standard",
+                    "boundary_id": "bottom",
+                    "components": [
+                        //0,
+                        1
+                        //2
+                    ],
+                    "values": [
+                        //0,
+                        0
+                        //0
+                    ]
+                }*/
+            ],
+            "neumann_boundary_conditions": [
+                {
+                    "type": "constant",
+                    "boundary_id": "right",
+                    "traction": [
+                        0.0,
+                        -0.5,
+                        0
+                    ]
+                }
+                /*{
+                    "type": "constant",
+                    "boundary_id": 2,
+                    "traction": [
+                        0.0,
+                        1.0,
+                        0
+                    ]
+                }*/
+            ],
+            "robin_boundary_conditions": []
+        }
+    ],
+    "outputs": {
+        "scalar_outputs": [
+            "strain_energy"
+        ],
+        "vector_outputs": [],
+        "tensor_outputs": [
+            "kirchhoff_stress",
+            "C"
+        ]
+    },
+    "fields": {
+        "scalar": [],
+        "vector": [
+            {
+                "name": "test",
+                "type": "analytical",
+                "x_func": "0",
+                "y_func": "cos(2*x*pi)",
+                "z_func": "sin(2*x*pi)"
+            }
+        ],
+        "tensor": []
+    },
+    "miscellaneous": {
+        "output_vtus": true,
+        "nr_threshold": 1e-6,
+        "max_nr_iterations": 4
+    }
+}

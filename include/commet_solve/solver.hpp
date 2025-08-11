@@ -5,12 +5,14 @@
 #include "config.hpp"
 #include "fe_data/fe_data.hpp"
 #include "material_domain/material_domain.hpp"
+#include "output/output_flags.hpp"
 #include "time.hpp"
 
 #include <algorithm>
+#include <deal.II/base/symmetric_tensor.h>
 #include <memory>
-#include <string>
 #include <nlohmann/json.hpp>
+#include <string>
 
 #include <deal.II/numerics/data_out.h>
 
@@ -30,6 +32,7 @@
 
 #include <deal.II/numerics/vector_tools.h>
 
+#include <deal.II/fe/fe_dgq.h>
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/fe/fe_values.h>
@@ -51,6 +54,11 @@
 
 #include "stage.hpp"
 
+#include "field/scalar_field.hpp"
+#include "field/tensor_field.hpp"
+#include "field/vector_field.hpp"
+#include "field/vfield_manager.hpp"
+
 namespace commet_solve
 {
 
@@ -61,7 +69,10 @@ template <int dim, typename Number = double>
 class FiniteStrainSolver
 {
   public:
-	FiniteStrainSolver(Triangulation<dim> *tri, Time<Number> &time, const unsigned int &order = 1);
+	FiniteStrainSolver(Triangulation<dim> *tri,
+					   Time<Number> &time,
+					   const std::vector<types::coarse_cell_id> &coarse_cell_index_to_coarse_cell_id,
+					   const unsigned int &order = 1);
 	FiniteStrainSolver(FiniteStrainSolver &&) = delete;
 	FiniteStrainSolver(const FiniteStrainSolver &) = delete;
 	FiniteStrainSolver &operator=(FiniteStrainSolver &&) = delete;
@@ -82,13 +93,25 @@ class FiniteStrainSolver
 
 	void add_stage(std::unique_ptr<Stage<dim, Number>> stage)
 	{
-		// material_domains[material_id] = move(mat);
 		this->stages.emplace_back(move(stage));
 	}
+
+	void add_scalar_output(const scalar_output_flag &flag)
+	{
+		scalar_outputs[flag] = LA::MPI::Vector(df_sca.locally_owned_dofs(), mpi_communicator);
+	}
+	void add_vector_output(const vector_output_flag &flag)
+	{
+		vector_outputs[flag] = LA::MPI::Vector(df_vec.locally_owned_dofs(), mpi_communicator);
+	}
+	void add_tensor_output(const tensor_output_flag &flag)
+	{
+		tensor_outputs[flag] = LA::MPI::Vector(df_ten.locally_owned_dofs(), mpi_communicator);
+	}
+
 	void initialize();
-	// void setup_system_with_constraints();
 	void setup_system_with_constraints(Stage<dim, Number> *stage);
-	void assemble_linear_system();
+	void assemble_linear_system(Stage<dim, Number> *stage);
 	void solve_linear_system();
 	void output();
 	void nr(Stage<dim, Number> *stage);
@@ -96,15 +119,54 @@ class FiniteStrainSolver
 	void homogeneous_constraints();
 	void write_problem_size();
 	void write_compute_times();
+	void project_outputs();
 	void solve();
+	void set_output_vtus(const bool &value)
+	{
+		output_vtus = value;
+	};
+	void set_nr_threshold(const Number &new_threshold)
+	{
+		this->nr_threshold = new_threshold;
+	};
+	Number get_nr_threshold()
+	{
+		return this->nr_threshold;
+	};
+	void set_max_nr_iterations(const unsigned int &new_max_iterations)
+	{
+		this->max_nr_iterations = new_max_iterations;
+	};
+	unsigned int get_max_nr_iterations()
+	{
+		return this->max_nr_iterations;
+	};
 
 	void add_dbc(std::unique_ptr<DirichletBC<dim>> dbc)
 	{
 		dbcs.push_back(move(dbc));
 	}
 
+	void add_vector_field(const std::string &name, vector<Tensor<1, dim, Number>> data)
+	{
+		vector_fields.add_field(
+			&df.get_triangulation(), mapping, quadrature_formula, name, data, coarse_cell_index_to_coarse_cell_id);
+	};
+	void add_analytical_vector_field(const std::string &name,
+									 const std::string &x_expression,
+									 const std::string &y_expression,
+									 const std::string &z_expression)
+	{
+		vector_fields.add_analytical_field(
+			&df.get_triangulation(), mapping, quadrature_formula, name, x_expression, y_expression, z_expression);
+	};
+
   private:
+	std::vector<types::coarse_cell_id> coarse_cell_index_to_coarse_cell_id;
 	DoFHandler<dim> df;
+	DoFHandler<dim> df_sca;
+	DoFHandler<dim> df_vec;
+	DoFHandler<dim> df_ten;
 	Time<Number> time;
 	MPI_Comm mpi_communicator;
 	const unsigned int pid;
@@ -113,6 +175,12 @@ class FiniteStrainSolver
 	const hp::MappingCollection<dim> mapping;
 	const hp::FECollection<dim> fe;
 	const hp::QCollection<dim> quadrature_formula;
+
+	const hp::FECollection<dim> fe_sca;
+	const hp::FECollection<dim> fe_vec;
+	const hp::FECollection<dim> fe_ten;
+
+	// vector<FENumbering<dim>> fe_vec_numbering;
 
 	std::map<unsigned int, std::unique_ptr<MaterialDomain<dim, Number>>> material_domains;
 	std::vector<std::unique_ptr<DirichletBC<dim, Number>>> dbcs;
@@ -132,24 +200,45 @@ class FiniteStrainSolver
 	LA::MPI::Vector locally_owned_du;
 	LA::MPI::Vector system_rhs;
 
+	std::map<scalar_output_flag, LA::MPI::Vector> scalar_outputs;
+	std::map<vector_output_flag, LA::MPI::Vector> vector_outputs;
+	std::map<tensor_output_flag, LA::MPI::Vector> tensor_outputs;
+
+	ScalarFieldManager<dim, Number> scalar_fields;
+	VectorFieldManager<dim, Number> vector_fields;
+	TensorFieldManager<dim, Number> tensor_fields;
+
 	std::ostringstream timer_stream;
 	TimerOutput solver_timer;
+	bool output_vtus = true;
+	Number nr_threshold = 1e-6;
+	unsigned int max_nr_iterations = 7;
 
 	std::vector<std::pair<Number, std::string>> times_and_names;
 };
 
 template <int dim, typename Number>
-FiniteStrainSolver<dim, Number>::FiniteStrainSolver(Triangulation<dim> *tri,
-													Time<Number> &time,
-													const unsigned int &order)
-	: df(*tri)
+FiniteStrainSolver<dim, Number>::FiniteStrainSolver(
+	Triangulation<dim> *tri,
+	Time<Number> &time,
+	const std::vector<types::coarse_cell_id> &coarse_cell_index_to_coarse_cell_id,
+	const unsigned int &order)
+	: coarse_cell_index_to_coarse_cell_id(coarse_cell_index_to_coarse_cell_id)
+	, df(*tri)
+	, df_sca(*tri)
+	, df_vec(*tri)
+	, df_ten(*tri)
 	, time(time)
 	, mpi_communicator(MPI_COMM_WORLD)
 	, pid(Utilities::MPI::this_mpi_process(mpi_communicator))
 	, pcout(std::cout, (pid == 0))
-	, mapping(MappingFE<dim>(FE_SimplexP<dim>(1)), MappingFE<dim>(FE_Q<dim>(1)))
+	, mapping(MappingFE<dim>(FE_SimplexP<dim>(order)), MappingFE<dim>(FE_Q<dim>(order)))
 	, fe(FESystem<dim, dim>(FE_SimplexP<dim>(order), dim), FESystem<dim, dim>(FE_Q<dim>(order), dim))
 	, quadrature_formula(QGaussSimplex<dim>(order + 1), QGauss<dim>(order + 1))
+	, fe_sca(FE_SimplexDGP<dim>(order), FE_DGQ<dim>(order))
+	, fe_vec(FESystem<dim, dim>(FE_SimplexDGP<dim>(order), dim), FESystem<dim, dim>(FE_DGQ<dim>(order), dim))
+	, fe_ten(FESystem<dim, dim>(FE_SimplexDGP<dim>(order), dim * dim),
+			 FESystem<dim, dim>(FE_DGQ<dim>(order), dim * dim))
 	, solver_timer(timer_stream, TimerOutput::summary, TimerOutput::wall_times)
 {
 
@@ -158,24 +247,32 @@ FiniteStrainSolver<dim, Number>::FiniteStrainSolver(Triangulation<dim> *tri,
 		if (cell->is_locally_owned())
 		{
 			if (cell->reference_cell() == ReferenceCells::Tetrahedron)
+			{
 				cell->set_active_fe_index(0);
+				cell->as_dof_handler_iterator(df_sca)->set_active_fe_index(0);
+				cell->as_dof_handler_iterator(df_vec)->set_active_fe_index(0);
+				cell->as_dof_handler_iterator(df_ten)->set_active_fe_index(0);
+			}
 			else if (cell->reference_cell() == ReferenceCells::Hexahedron)
+			{
 				cell->set_active_fe_index(1);
+				cell->as_dof_handler_iterator(df_sca)->set_active_fe_index(1);
+				cell->as_dof_handler_iterator(df_vec)->set_active_fe_index(1);
+				cell->as_dof_handler_iterator(df_ten)->set_active_fe_index(1);
+			}
 			else
 				DEAL_II_NOT_IMPLEMENTED();
 		}
 
 	df.distribute_dofs(fe);
+	df_sca.distribute_dofs(fe_sca);
+	df_vec.distribute_dofs(fe_vec);
+	df_ten.distribute_dofs(fe_ten);
 	pcout << "Number of elements: " << df.get_triangulation().n_global_active_cells() << std::endl;
 	pcout << "Number of degrees of freedom: " << df.n_dofs() << std::endl;
 
 	locally_owned_dofs = df.locally_owned_dofs();
 	locally_relevant_dofs = DoFTools::extract_locally_relevant_dofs(df);
-
-	// locally_relevant_but_not_owned_dofs = locally_relevant_dofs;
-	// locally_relevant_but_not_owned_dofs.subtract_set(locally_owned_dofs);
-	//
-	//
 
 	locally_relevant_u.reinit(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
 	system_rhs.reinit(locally_owned_dofs, mpi_communicator);
@@ -186,42 +283,41 @@ FiniteStrainSolver<dim, Number>::FiniteStrainSolver(Triangulation<dim> *tri,
 template <int dim, typename Number>
 void FiniteStrainSolver<dim, Number>::solve()
 {
-    this->write_problem_size();
+	this->write_problem_size();
 	output();
 	unsigned int count = 0;
-    {
+	{
 
-        TimerOutput::Scope section(solver_timer, "solve_problem_total");
-        for (auto &stage : this->stages)
-        {
+		TimerOutput::Scope section(solver_timer, "solve_problem_total");
+		for (auto &stage : this->stages)
+		{
 
-            count++;
-            pcout << "===============================\n"
-                     "============Loading stage " +
-                         std::to_string(count) +
-                         "===================\n"
-                         "===============================\n";
+			count++;
+			pcout << "===============================\n"
+					 "============Loading stage " +
+						 std::to_string(count) +
+						 "===================\n"
+						 "===============================\n";
 
-            this->time.set_end(stage->end_time);
-            this->time.set_dt(stage->dt);
+			this->time.set_end(stage->end_time);
+			this->time.set_dt(stage->dt);
 
-            this->setup_system_with_constraints(stage.get());
-            while (not time.finished())
-            {
+			this->setup_system_with_constraints(stage.get());
+			while (not time.finished())
+			{
 
-                this->time.increment();
-                pcout << "Time step: " << time.get_timestep() << "\tTime: " << time.current()
-                      << "\t Delta t: " << time.get_delta_t() << std::endl;
+				this->time.increment();
+				pcout << "Time step: " << time.get_timestep() << "\tTime: " << time.current()
+					  << "\t Delta t: " << time.get_delta_t() << std::endl;
 
-                this->nr(stage.get());
-                this->output();
-                pcout << "\n";
-            }
-        }
+				this->nr(stage.get());
+				this->output();
+				pcout << "\n";
+			}
+		}
+	}
 
-    }
-
-    this->write_compute_times();
+	this->write_compute_times();
 }
 
 template <int dim, typename Number>
@@ -307,15 +403,34 @@ void FiniteStrainSolver<dim, Number>::initialize()
 	TimerOutput::Scope section(solver_timer, "initialize");
 	hp::FEValues<dim> hp_fe_values(
 		mapping, fe, quadrature_formula, update_values | update_gradients | update_JxW_values);
+	hp::FEValues<dim> project_hp_fe_values(
+		mapping, fe_sca, quadrature_formula, update_values | update_gradients | update_JxW_values);
+
+	// hp::FEValues<dim> sca_fe_values(mapping, fe_sca, quadrature_formula, update_values | update_gradients |
+	// update_JxW_values); hp::FEValues<dim> vec_fe_values(mapping, fe_sca, quadrature_formula, update_values |
+	// update_gradients | update_JxW_values); hp::FEValues<dim> ten_fe_values(mapping, fe_ten, quadrature_formula,
+	// update_values | update_gradients | update_JxW_values);
 
 	std::vector<types::global_dof_index> local_dof_indices;
+
+	std::vector<types::global_dof_index> sca_dof_indices;
+	std::vector<types::global_dof_index> vec_dof_indices;
+	std::vector<types::global_dof_index> ten_dof_indices;
 
 	for (const auto &cell : df.active_cell_iterators())
 		if (cell->is_locally_owned())
 		{
 			hp_fe_values.reinit(cell);
+
+			const auto &sca_cell = cell->as_dof_handler_iterator(df_sca);
+			const auto &vec_cell = cell->as_dof_handler_iterator(df_vec);
+			const auto &ten_cell = cell->as_dof_handler_iterator(df_ten);
+
+			project_hp_fe_values.reinit(sca_cell);
+
 			types::global_cell_index cell_id = cell->global_active_cell_index();
 			const auto &fe_values = hp_fe_values.get_present_fe_values();
+			const auto &project_fe_values = project_hp_fe_values.get_present_fe_values();
 
 			const unsigned int qps_per_cell = fe_values.quadrature_point_indices().size();
 			const unsigned int dofs_per_cell = cell->get_fe().n_dofs_per_cell();
@@ -325,28 +440,47 @@ void FiniteStrainSolver<dim, Number>::initialize()
 			local_dof_indices.resize(dofs_per_cell);
 			cell->get_dof_indices(local_dof_indices);
 
+			sca_dof_indices.resize(sca_cell->get_fe().n_dofs_per_cell());
+			sca_cell->get_dof_indices(sca_dof_indices);
+
+			vec_dof_indices.resize(vec_cell->get_fe().n_dofs_per_cell());
+			vec_cell->get_dof_indices(vec_dof_indices);
+
+			ten_dof_indices.resize(ten_cell->get_fe().n_dofs_per_cell());
+			ten_cell->get_dof_indices(ten_dof_indices);
+
 			std::vector<std::vector<Number>> N(qps_per_cell, std::vector<Number>(nodes_per_cell));
+			std::vector<std::vector<Number>> project_N(qps_per_cell, std::vector<Number>(nodes_per_cell));
 
 			std::vector<std::vector<Tensor<1, dim, Number>>> B(qps_per_cell,
 															   std::vector<Tensor<1, dim, Number>>(nodes_per_cell));
+
+			this->material_domains.at(cell->material_id())
+				->add_entry(cell_id, *cell, fe_values, scalar_fields, vector_fields, tensor_fields);
 
 			for (const unsigned int qp : fe_values.quadrature_point_indices())
 			{
 				for (unsigned int i = 0; i < nodes_per_cell; i++)
 				{
+					project_N.at(qp).at(i) = project_fe_values.shape_value(i, qp);
+
 					const unsigned int i_dof = i * dim;
 					N.at(qp).at(i) = fe_values.shape_value(i_dof, qp);
 					B.at(qp).at(i) = fe_values.shape_grad(i_dof, qp);
-					this->material_domains.at(cell->material_id())->add_entry(cell_id, qp);
 				}
 			}
 
 			fe_data.add_cell(CellData<dim, Number>(cell_id,
+												   cell->active_fe_index(),
 												   cell->material_id(),
 												   nodes_per_cell,
 												   qps_per_cell,
 												   local_dof_indices,
+												   sca_dof_indices,
+												   vec_dof_indices,
+												   ten_dof_indices,
 												   fe_values.get_JxW_values(),
+												   project_N,
 												   N,
 												   B));
 		}
@@ -355,10 +489,14 @@ void FiniteStrainSolver<dim, Number>::initialize()
 	{
 		material_domain->close();
 	}
+
+	for (auto &stage : this->stages)
+		for (auto &nbc : stage->get_nbcs())
+			nbc->initialize(df, mapping, fe, quadrature_formula);
 }
 
 template <int dim, typename Number>
-void FiniteStrainSolver<dim, Number>::assemble_linear_system()
+void FiniteStrainSolver<dim, Number>::assemble_linear_system(Stage<dim, Number> *stage)
 {
 
 	TimerOutput::Scope section(solver_timer, "assemble_linear_system");
@@ -383,6 +521,9 @@ void FiniteStrainSolver<dim, Number>::assemble_linear_system()
 
 	FullMatrix<double> cell_matrix;
 	Vector<double> cell_rhs;
+
+	for (auto &nbc : stage->get_nbcs())
+		nbc->apply(locally_relevant_u, constraints, system_matrix, system_rhs, time.current(), time.get_delta_t());
 
 	{
 		TimerOutput::Scope section_f(solver_timer, "assemble_linear_system_update_F");
@@ -511,42 +652,46 @@ void FiniteStrainSolver<dim, Number>::solve_linear_system()
 template <int dim, typename Number>
 void FiniteStrainSolver<dim, Number>::output()
 {
+	if (!output_vtus)
+		return;
 
-	TimerOutput::Scope section(solver_timer, "output_linear_system");
+	this->project_outputs();
+	TimerOutput::Scope section(solver_timer, "write_output");
+
 	DataOut<dim> data_out;
 	DataOutBase::VtkFlags flags;
 	flags.write_higher_order_cells = true;
 	data_out.set_flags(flags);
-
 	std::vector<std::string> solution_names(dim, "u");
 
 	std::vector<DataComponentInterpretation::DataComponentInterpretation> interpretation(
 		dim, DataComponentInterpretation::component_is_part_of_vector);
+	std::vector<DataComponentInterpretation::DataComponentInterpretation> tensor_interpretation(
+		dim * dim, DataComponentInterpretation::component_is_part_of_tensor);
 
 	data_out.add_data_vector(df, locally_relevant_u, solution_names, interpretation);
 
+	for (auto &[flag, vec] : this->scalar_outputs)
+	{
+		vec.compress(VectorOperation::add);
+		data_out.add_data_vector(df_sca, vec, SCALAR_OUTPUT_NAMES.at(flag));
+	}
+
+	for (auto &[flag, vec] : this->vector_outputs)
+	{
+		vec.compress(VectorOperation::add);
+		data_out.add_data_vector(df_vec, vec, VECTOR_OUTPUT_NAMES.at(flag), interpretation);
+	}
+
+	for (auto &[flag, vec] : this->tensor_outputs)
+	{
+		vec.compress(VectorOperation::add);
+		data_out.add_data_vector(df_ten, vec, TENSOR_OUTPUT_NAMES.at(flag), tensor_interpretation);
+	}
+
+	vector_fields.ouput_fields(data_out);
 	data_out.build_patches(mapping, fe.max_degree(), DataOut<dim>::curved_inner_cells);
 	// data_out.build_patches(mapping, 1, DataOut<dim>::curved_inner_cells);
-
-	// const unsigned int n_digits = 4;
-	// const std::string base_vtu_name = "solution";
-	// std::ostringstream ss;
-	// ss << std::setw(n_digits) << std::setfill('0') << 0;
-	// const std::string rel_vtu_name = base_vtu_name + "_" + ss.str() + ".pvtu";
-	// // const string name = output_path.string() + "/" + base_vtu_name;
-	// const std::string name = "./" + base_vtu_name;
-
-	// data_out.write_vtu_with_pvtu_record("./", base_vtu_name, 0, mpi_communicator, n_digits);
-	// // data_out_faces.write_vtu_with_pvtu_record(
-	// // 	output_path.string() + "/", base_vtu_name, time.get_timestep(),
-	// // mpi_communicator, n_digits);
-
-	// // if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0) {
-	// //   times_and_names.emplace_back(time.current(), rel_vtu_name);
-	// //   const string pvd_name =  "./solution.pvd";
-	// //   ofstream pvd_output(pvd_name);
-	// //   DataOutBase::write_pvd_record(pvd_output, times_and_names);
-	// // }
 
 	const unsigned int n_digits = 4;
 	const std::string base_vtu_name = "solution";
@@ -554,19 +699,19 @@ void FiniteStrainSolver<dim, Number>::output()
 	ss << std::setw(n_digits) << std::setfill('0') << time.get_timestep();
 	const std::string rel_vtu_name = base_vtu_name + "_" + ss.str() + ".pvtu";
 	const std::string name = "./" + base_vtu_name;
-
 	data_out.write_vtu_with_pvtu_record("./", base_vtu_name, time.get_timestep(), mpi_communicator, n_digits);
-	// data_out_faces.write_vtu_with_pvtu_record(
-	// 	output_path.string() + "/", base_vtu_name, time.get_timestep(), mpi_communicator, n_digits);
 
 	if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
 	{
 		times_and_names.emplace_back(time.current(), rel_vtu_name);
-		// const string pvd_name = output_path.string() + "/solution.pvd";
 		const std::string pvd_name = "./solution.pvd";
 		std::ofstream pvd_output(pvd_name);
 		DataOutBase::write_pvd_record(pvd_output, times_and_names);
 	}
+
+	// for (auto &[flag, vec] : this->scalar_outputs){
+	//     vec = 0;
+	// }
 }
 
 template <int dim, typename Number>
@@ -576,29 +721,32 @@ void FiniteStrainSolver<dim, Number>::nr(Stage<dim, Number> *stage)
 	// this->setup_system_with_constraints();
 	this->increment_constraints(stage);
 	// this->assemble_rhs_first_step();
-	this->assemble_linear_system();
+	this->assemble_linear_system(stage);
 	const double initial_residual = this->system_rhs.l2_norm();
 	this->solve_linear_system();
+
+	unsigned int iteration = 1;
+	if (iteration >= max_nr_iterations)
+		return;
+
 	this->homogeneous_constraints();
-	this->assemble_linear_system();
+	this->assemble_linear_system(stage);
 
 	// this->constitutive_update();
 	// this->assemble_rhs();
 
-	unsigned int iteration = 0;
-
 	double current_residual = this->system_rhs.l2_norm();
 	pcout << "Iteration: " << iteration << "\tR_0: " << initial_residual << "\t R: " << current_residual << std::endl;
 
-	while (current_residual / initial_residual > 1e-6 && iteration < 7)
+	while (current_residual / initial_residual > this->nr_threshold && iteration < max_nr_iterations)
 	{
 
 		this->solve_linear_system();
-		this->assemble_linear_system();
+		this->assemble_linear_system(stage);
 		current_residual = this->system_rhs.l2_norm();
-		iteration++;
 		pcout << "Iteration: " << iteration << "\tR_0: " << initial_residual << "\t R" << iteration << ": "
 			  << current_residual << std::endl;
+		iteration++;
 	}
 }
 
@@ -616,8 +764,6 @@ void FiniteStrainSolver<dim, Number>::homogeneous_constraints()
 
 	this->constraints.close();
 }
-
-
 
 template <int dim, typename Number>
 void FiniteStrainSolver<dim, Number>::write_problem_size()
@@ -653,6 +799,88 @@ void FiniteStrainSolver<dim, Number>::write_compute_times()
 	}
 }
 
+template <int dim, typename Number>
+void FiniteStrainSolver<dim, Number>::project_outputs()
+{
+
+	TimerOutput::Scope section(solver_timer, "project_outputs");
+	for (auto &[flag, vec] : this->scalar_outputs)
+	{
+		vec = 0;
+		// Warning: this compress is very neccesary, see
+		// https://dealii.org/current/doxygen/deal.II/classPETScWrappers_1_1MPI_1_1Vector.html
+		vec.compress(VectorOperation::add);
+	}
+	for (auto &[flag, vec] : this->vector_outputs)
+	{
+		vec = 0;
+		// Warning: this compress is very neccesary, see
+		// https://dealii.org/current/doxygen/deal.II/classPETScWrappers_1_1MPI_1_1Vector.html
+		vec.compress(VectorOperation::add);
+	}
+	for (auto &[flag, vec] : this->tensor_outputs)
+	{
+		vec = 0;
+		// Warning: this compress is very neccesary, see
+		// https://dealii.org/current/doxygen/deal.II/classPETScWrappers_1_1MPI_1_1Vector.html
+		vec.compress(VectorOperation::add);
+	}
+
+	Tensor<2, dim, Number> F;
+	// Number psi;
+	SymmetricTensor<2, dim, Number> tau;
+	SymmetricTensor<4, dim, Number> cc;
+
+	Vector<Number> projection_vector;
+
+	std::vector<Number> sca_qp_vals;
+	std::vector<Tensor<1, dim, Number>> vec_qp_vals;
+	std::vector<Tensor<2, dim, Number>> ten_qp_vals;
+
+	for (const CellData<dim, Number> &cell_data : this->fe_data.get_cell_data())
+	{
+		std::unique_ptr<MaterialDomain<dim, Number>> &mat_domain = this->material_domains.at(cell_data.material_id);
+		sca_qp_vals.resize(cell_data.n_qps);
+		vec_qp_vals.resize(cell_data.n_qps);
+		ten_qp_vals.resize(cell_data.n_qps);
+		for (auto &[flag, vec] : this->scalar_outputs)
+		{
+			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
+			{
+				sca_qp_vals.at(qp) = mat_domain->get_scalar_value(cell_data.id, qp, flag);
+			}
+			cell_data.project_scalar_values(sca_qp_vals, projection_vector);
+			for (unsigned int i = 0; i < projection_vector.size(); i++)
+				vec[cell_data.sca_dofs[i]] += projection_vector[i];
+		}
+		for (auto &[flag, vec] : this->vector_outputs)
+		{
+			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
+			{
+				vec_qp_vals.at(qp) = mat_domain->get_vector_value(cell_data.id, qp, flag);
+			}
+			// cell_data.project_vector_values(vec_qp_vals, projection_vector, *(fe_vec.begin() + cell_data.fe_index));
+			cell_data.project_vector_values(vec_qp_vals, projection_vector, fe_vec[cell_data.fe_index]);
+
+			for (unsigned int i = 0; i < projection_vector.size(); i++)
+				vec[cell_data.vec_dofs[i]] += projection_vector[i];
+		}
+		for (auto &[flag, vec] : this->tensor_outputs)
+		{
+
+			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
+			{
+				ten_qp_vals.at(qp) = mat_domain->get_tensor_value(cell_data.id, qp, flag);
+			}
+			// cell_data.project_tensor_values(ten_qp_vals, projection_vector, *(fe_ten.begin() + cell_data.fe_index));
+			cell_data.project_tensor_values(ten_qp_vals, projection_vector, fe_ten[cell_data.fe_index]);
+			// cell_data.project_vector_values(vec_qp_vals, projection_vector, fe_ve[cell_data.fe_index]);
+
+			for (unsigned int i = 0; i < projection_vector.size(); i++)
+				vec[cell_data.ten_dofs[i]] += projection_vector[i];
+		}
+	}
+}
 
 } // namespace commet_solve
 

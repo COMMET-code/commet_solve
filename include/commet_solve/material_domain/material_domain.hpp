@@ -1,6 +1,8 @@
 #ifndef INCLUDE_MATERIAL_DOMAIN_MATERIAL_DOMAIN_HPP_
 #define INCLUDE_MATERIAL_DOMAIN_MATERIAL_DOMAIN_HPP_
 
+#include <cmath>
+#include <deal.II/fe/fe_values.h>
 #include <unordered_map>
 
 #include <deal.II/base/symmetric_tensor.h>
@@ -9,6 +11,12 @@
 
 #include "../types.hpp"
 #include "../utilities.hpp"
+#include "commet_solve/output/output_flags.hpp"
+
+#include "../field/scalar_field.hpp"
+#include "../field/tensor_field.hpp"
+#include "../field/vector_field.hpp"
+#include "../field/vfield_manager.hpp"
 
 namespace commet_solve
 {
@@ -57,6 +65,13 @@ class MaterialDomain
 
 	virtual void add_entry(const dealii::types::global_cell_index &cell, const unsigned int &qp) = 0;
 
+	virtual void add_entry(const dealii::types::global_cell_index &cell_idx,
+						   const DoFCellAccessor<dim, dim, false> &cell,
+						   const FEValues<dim, dim> &fe_values,
+						   const ScalarFieldManager<dim, Number> &scalar_fields,
+						   const VectorFieldManager<dim, Number> &vector_fields,
+						   const TensorFieldManager<dim, Number> &tensor_fields) = 0;
+
 	virtual void update_F(const dealii::types::global_cell_index &cell,
 						  const unsigned int &qp,
 						  const Tensor<2, dim, Number> &F) = 0;
@@ -67,6 +82,27 @@ class MaterialDomain
 						  Number &psi,
 						  SymmetricTensor<2, dim, Number> &tau,
 						  SymmetricTensor<4, dim, Number> &cc) = 0;
+
+	virtual Number get_scalar_value(const dealii::types::global_cell_index & /*cell*/,
+									const unsigned int & /*qp*/,
+									const scalar_output_flag & /*flag*/)
+	{
+		return NAN;
+	};
+
+	virtual Tensor<1, dim, Number> get_vector_value(const dealii::types::global_cell_index & /*cell*/,
+													const unsigned int & /*qp*/,
+													const vector_output_flag & /*flag*/)
+	{
+		return Tensor<1, dim, Number>({NAN, NAN, NAN});
+	};
+
+	virtual Tensor<2, dim, Number> get_tensor_value(const dealii::types::global_cell_index & /*cell*/,
+													const unsigned int & /*qp*/,
+													const tensor_output_flag & /*flag*/)
+	{
+		return Tensor<2, dim, Number>({{NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}});
+	};
 
 	virtual void compute_constitutive_behaviour() = 0;
 

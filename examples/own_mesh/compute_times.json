@@ -1,0 +1,15 @@
+{
+    "FiniteStrainSolver_constructor": 0.001736865,
+    "assemble_linear_system": 0.21591535599999997,
+    "assemble_linear_system_compress": 0.06565597499999999,
+    "assemble_linear_system_compute_el_contribution": 0.13614004500000002,
+    "assemble_linear_system_constitutive_update": 0.0076706479999999995,
+    "assemble_linear_system_update_F": 0.005463817000000003,
+    "increment_constraints": 0.0015972669999999997,
+    "initialize": 0.001763686,
+    "project_outputs": 0.35449017899999996,
+    "setup_system_with_constraints": 0.003096887,
+    "solve_linear_system": 0.06516096299999999,
+    "solve_problem_total": 0.689218136,
+    "write_output": 0.08141231199999999
+}

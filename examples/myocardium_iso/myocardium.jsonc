@@ -1,0 +1,138 @@
+{
+    "mesh": {
+        /* required: true
+        options:
+            "builtin" -- uses a mesh that the solver generates
+            "read" -- reads a mesh from file
+        */
+        "from": "read",
+        /* required: true (if using builtin)
+        options:
+            "cube" -- generates
+            "cylinder" -- reads a mesh from file
+        */
+        "path": "new_format_biv_fix_boundaries.json",
+        "order": 1,
+        "global_refines": 0
+    },
+    "materials": [
+        {
+            "id": 0,
+            "type": "neohookean",
+            "lambda": 10,
+            "mu": 10
+        }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.05,
+            "dirichlet_boundary_conditions": [
+                {
+                    "type": "standard",
+                    "boundary_id": "LV_TIE_AA",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": "LV_TIE_LA",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": "RV_TIE_PT",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": "RV_TIE_RA",
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ],
+            "neumann_boundary_conditions": [
+                {
+                    "type": "pressure",
+                    "boundary_id": "Fluid_Cavity_LV",
+                    "pressure": -1
+                },
+                {
+                    "type": "pressure",
+                    "boundary_id": "Fluid_Cavity_RV",
+                    "pressure": -1
+                }
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "Exterior_V",
+                //     "stiffness": 0.5
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "LV_TIE_AA",
+                //     "stiffness": 0.1
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "LV_TIE_LA",
+                //     "stiffness": 0.1
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "RV_TIE_PT",
+                //     "stiffness": 0.1
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "RV_TIE_RA",
+                //     "stiffness": 0.1
+                // }
+
+
+
+            ],
+            "robin_boundary_conditions": [
+
+            ]
+        }
+    ],
+    "miscellaneous": {
+        "output_vtus": true,
+        "nr_threshold": 1e-6,
+        "max_nr_iterations": 7
+    }
+}

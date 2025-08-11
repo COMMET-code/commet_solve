@@ -20,6 +20,9 @@ class GloballyVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 
 	void compute_constitutive_behaviour() override
 	{
+        if(!F.is_contiguous())
+            std::cout << "F is not contiguous!!!" << std::endl;
+        F = F.contiguous();
 		unsigned int count = 0;
 		for (auto &[point_key, point_data] : this->qp_data)
 		{
@@ -28,7 +31,13 @@ class GloballyVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 			count++;
 		}
 
-		this->evaluate_model(F, structural_vectors, energy, tau, cc);
+		this->evaluate_model(F, structural_vectors, energy, tau, cc); 
+        if(!tau.is_contiguous())
+            std::cout << "tau is not contiguous!!!" << std::endl;
+        if(!cc.is_contiguous())
+            std::cout << "cc is not contiguous!!!" << std::endl;
+        tau = tau.contiguous();
+        cc = cc.contiguous();
 
 		TensorLayout layout = determine_tensor_layout(tau);
 		count = 0;

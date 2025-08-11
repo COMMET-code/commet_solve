@@ -1,0 +1,86 @@
+{
+    "mesh": {
+        /* required: true
+        options:
+            "builtin" -- uses a mesh that the solver generates
+            "read" -- reads a mesh from file
+        */
+        "from": "builtin",
+        /* required: true (if using builtin)
+        options:
+            "cube" -- generates
+            "cylinder" -- reads a mesh from file
+        */
+        "type": "cube",
+        "order": 2,
+        "global_refines": 3
+    },
+    "materials": [
+        {
+            "id": 0,
+            "type": "globally_vectorized_ncm",
+            "evaluation_method": "optimized",
+            // "evaluation_method": "using_F",
+            // "path_to_torchscript": "../resources/torchscripts/opt/opt-neohookean-micnn-cpu.torchscript"
+            "path_to_torchscript": "opt-neohookean-micnn-cpu.torchscript"
+        }
+        // {
+        //     "id": 0,
+        //     "type": "batch_vectorized_ncm",
+        //     "evaluation_method": "optimized",
+        //     "batch_size": 256,
+        //     "path_to_torchscript": "../resources/torchscripts/opt/opt-neohookean-micnn-cpu.torchscript"
+        // }
+        // {
+        //     "id": 0,
+        //     "type": "neohookean",
+        //     "mu": 2,
+        //     "lambda": 2
+        // }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.1,
+            "dirichlet_boundary_conditions": [
+                {
+                    "type": "standard",
+                    "boundary_id": 1,
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "type": "pull_twist",
+                    "boundary_id": 4,
+                    "centre": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ],
+                    "axis": [
+                        1,
+                        0,
+                        0
+                    ],
+                    "u": 1,
+                    "theta": 4.0
+                }
+            ],
+            "neumann_boundary_conditions": [],
+            "robin_boundary_conditions": []
+        }
+    ],
+    "miscellaneous": {
+        "output_vtus": false,
+        "nr_threshold": 1e-6,
+        "max_nr_iterations": 1
+    }
+}
