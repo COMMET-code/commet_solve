@@ -14,7 +14,7 @@
         // Thickness of the plate
         "thickness": 0.1,
         // The number of times to refine the mesh of the geometry in-plane
-        "planar_refinements": 3,
+        "planar_refinements": 4,
         // The number of times to refine the mesh of the geometry globally (through the thickness and in-plane)
         "global_refinements": 1
     },
@@ -65,9 +65,13 @@
         }
     ], 
     "outputs": {
-         "scalar_outputs": ["I1"],
+         // "scalar_outputs": ["I1"],
          "vector_outputs": [ ],
-         "tensor_outputs": ["kirchhoff_stress", "C"]
+         "tensor_outputs": ["kirchhoff_stress",
+             "C"
+             // "F",
+             // "E"
+         ]
      },
     "miscellaneous": {
         "output_vtus": true,
