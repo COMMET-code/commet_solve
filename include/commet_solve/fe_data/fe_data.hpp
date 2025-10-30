@@ -1,6 +1,7 @@
 #ifndef INCLUDE_FE_DATA_FE_DATA_HPP_
 #define INCLUDE_FE_DATA_FE_DATA_HPP_
 
+#include <deal.II/base/exceptions.h>
 #include <deal.II/base/types.h>
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/lac/full_matrix.h>
@@ -52,77 +53,86 @@ struct CellData
 
 	};
 
-	void project_scalar_values(const std::vector<Number> &values_at_qps, Vector<Number> &v) const
+	void project_scalar_values(const std::vector<Number> &values_at_qps,
+                            Vector<Number> &projection,
+                            Vector<Number> &rhs) const
 	{
-		v.reinit(this->n_nodes);
-		Vector<Number> w(this->n_nodes);
-		w = 0;
+        Assert(projection.size()==this->n_nodes, ExcDimensionMismatch(projection.size(), this->n_nodes));
+        Assert(rhs.size()==this->n_nodes, ExcDimensionMismatch(projection.size(), this->n_nodes));
+		rhs = 0;
 		for (unsigned int qp = 0; qp < n_qps; qp++)
 			for (unsigned int i = 0; i < n_nodes; i++)
-				w[i] += values_at_qps.at(qp) * project_N.at(qp).at(i) * jxw.at(qp);
+				rhs[i] += values_at_qps.at(qp) * project_N.at(qp).at(i) * jxw.at(qp);
 
-		projection_matrix.vmult(v, w);
+		projection_matrix.vmult(projection, rhs);
 	}
 	void project_vector_values(const std::vector<Tensor<1, dim, Number>> &values_at_qps,
-							   Vector<Number> &v,
+							   Vector<Number> &projection,
+							   Vector<Number> &rhs,
+							   std::vector<Vector<Number>>& projection_storage,
 							   const FESystem<dim> &fe_sys) const
 	{
-		v.reinit(this->vec_dofs.size());
-		Vector<Number> w(this->n_nodes);
 
-		std::vector<Vector<Number>> projections(dim);
-		// Vector<Number> projection_comp_i(this->n_nodes);
+        Assert(projection.size()==this->vec_dofs.size(),
+               ExcDimensionMismatch(projection.size(), this->vec_dofs.size()));
+        Assert(rhs.size()==this->n_nodes, ExcDimensionMismatch(rhs.size(), this->n_nodes));
+        Assert(projection_storage.size()==dim, ExcDimensionMismatch(projection_storage.size(), dim));
+        for(unsigned int i=0; i<dim; i++)
+            Assert(projection_storage.at(i).size()==this->n_nodes,
+                   ExcDimensionMismatch(projection_storage.at(i).size(), this->n_nodes));
+
 
 		for (unsigned int i_comp = 0; i_comp < dim; i_comp++)
 		{
-			projections.at(i_comp).reinit(this->n_nodes);
 
-			w = 0;
+			rhs = 0;
 			for (unsigned int qp = 0; qp < n_qps; qp++)
 				for (unsigned int i_node = 0; i_node < n_nodes; i_node++)
-					w[i_node] += values_at_qps.at(qp)[i_comp] * project_N.at(qp).at(i_node) * jxw.at(qp);
+					rhs[i_node] += values_at_qps.at(qp)[i_comp] * project_N.at(qp).at(i_node) * jxw.at(qp);
 
-			projection_matrix.vmult(projections.at(i_comp), w);
+			projection_matrix.vmult(projection_storage.at(i_comp), rhs);
 
-			// for (unsigned int j = 0; j < projection_comp_i.size(); j++)
-			// 	// v[j +  i*projection_comp_i.size() ] = projection_comp_i[j];
-			// 	v[numbering.node_to_dofs_table.at(j)[i]] = projection_comp_i[j];
 		}
 
-		for (unsigned int j = 0; j < v.size(); j++)
+		for (unsigned int j = 0; j < projection.size(); j++)
 		{
 			const auto &comps = fe_sys.system_to_component_index(j);
-			v[j] = projections.at(comps.first)[comps.second];
+			projection[j] = projection_storage.at(comps.first)[comps.second];
 		}
 	}
 	void project_tensor_values(const std::vector<Tensor<2, dim, Number>> &values_at_qps,
-							   Vector<Number> &v,
+							   Vector<Number> &projection,
+							   Vector<Number> &rhs,
+							   std::vector<Vector<Number>>& projection_storage,
 							   const FESystem<dim> &fe_sys) const
 	{
-		v.reinit(this->ten_dofs.size());
-		Vector<Number> w(this->n_nodes);
 
-		std::vector<Vector<Number>> projections(dim * dim);
+        Assert(projection.size()==this->ten_dofs.size(),
+               ExcDimensionMismatch(projection.size(), this->ten_dofs.size()));
+        Assert(rhs.size()==this->n_nodes, ExcDimensionMismatch(rhs.size(), this->n_nodes));
+        Assert(projection_storage.size()==dim*dim, ExcDimensionMismatch(projection_storage.size(), dim*dim));
+        for(unsigned int i=0; i<dim*dim; i++)
+            Assert(projection_storage.at(i).size()==this->n_nodes,
+                   ExcDimensionMismatch(projection_storage.at(i).size(), this->n_nodes));
 
 		unsigned int count = 0;
 		for (unsigned int i_comp = 0; i_comp < dim; i_comp++)
 			for (unsigned int j_comp = 0; j_comp < dim; j_comp++)
 			{
-				projections.at(count).reinit(this->n_nodes);
 
-				w = 0;
+				rhs = 0;
 				for (unsigned int qp = 0; qp < n_qps; qp++)
 					for (unsigned int i_node = 0; i_node < n_nodes; i_node++)
-						w[i_node] += values_at_qps.at(qp)[i_comp][j_comp] * project_N.at(qp).at(i_node) * jxw.at(qp);
+						rhs[i_node] += values_at_qps.at(qp)[i_comp][j_comp] * project_N.at(qp).at(i_node) * jxw.at(qp);
 
-				projection_matrix.vmult(projections.at(count), w);
+				projection_matrix.vmult(projection_storage.at(count), rhs);
 				count++;
 			}
 
-		for (unsigned int j = 0; j < v.size(); j++)
+		for (unsigned int j = 0; j < projection.size(); j++)
 		{
 			const auto &comps = fe_sys.system_to_component_index(j);
-			v[j] = projections.at(comps.first)[comps.second];
+			projection[j] = projection_storage.at(comps.first)[comps.second];
 		}
 	}
 
