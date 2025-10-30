@@ -84,6 +84,7 @@ void parse_input_file(const json & inp_file_contents){
         solver.set_output_vtus(value_or_default<bool>("output_vtus", misc, true));
         solver.set_nr_threshold(value_or_default<double>("nr_threshold", misc, solver.get_nr_threshold()));
         solver.set_max_nr_iterations(value_or_default<unsigned int>("max_nr_iterations", misc, solver.get_max_nr_iterations()));
+        solver.set_write_mesh_data(value_or_default<bool>("write_mesh_data", misc, solver.get_write_mesh_data()));
     }
 
 

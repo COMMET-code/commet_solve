@@ -46,8 +46,6 @@ class FullyDefinedDBC : public DirichletBC<dim, Number>
 			   const Number &time,
 			   const Number &d_time) override;
 
-	// const unsigned int boundary_id;
-	// const std::vector<unsigned int> components;
 	const unsigned int n_components;
 	const std::vector<Number> end_values;
 	const Number end_time;
@@ -61,19 +59,11 @@ FullyDefinedDBC<dim, Number>::FullyDefinedDBC(const unsigned int &bc_id,
 											  const std::vector<Number> &end_values,
 											  const Number &end_time)
 	: DirichletBC<dim, Number>(bc_id, components)
-	// , boundary_id(bc_id)
-	// , components(components)
 	, n_components(components.size())
 	, end_values(end_values)
 	, end_time(end_time)
 {
 
-	// assertm(n_components == end_values.size(),
-	//         "The number of components must be the same as the "
-	//         "number of end values provided but\n"
-	//         "components.size()=" +
-	//             to_string(components.size()) +
-	//             " and end_values.size()=" + to_string(end_values.size()));
 }
 
 template <int dim, typename Number>

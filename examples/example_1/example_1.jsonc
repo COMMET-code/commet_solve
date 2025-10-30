@@ -62,6 +62,38 @@
             ],
             "neumann_boundary_conditions": [],
             "robin_boundary_conditions": []
+        },
+        {
+            "end_time": 2,
+            "time_increment_size": 0.1,
+            "dirichlet_boundary_conditions": [
+                 {
+                     "type": "standard",
+                     "boundary_id": 1,
+                     "components": [0],
+                     "values": [0]
+                 },
+                 {
+                     "type": "standard",
+                     "boundary_id": 2,
+                     "components": [1],
+                     "values": [0]
+                 },
+                 {
+                     "type": "standard",
+                     "boundary_id": 3,
+                     "components": [2],
+                     "values": [0]
+                 },
+                 {
+                     "type": "standard",
+                     "boundary_id": 4,
+                     "components": [0, 1, 2],
+                     "values": [1, 0, 0]
+                 }
+            ],
+            "neumann_boundary_conditions": [],
+            "robin_boundary_conditions": []
         }
     ], 
     "outputs": {
@@ -76,6 +108,7 @@
     "miscellaneous": {
         "output_vtus": true,
         "nr_threshold": 1e-6,
-        "max_nr_iterations": 5
+        "max_nr_iterations": 5,
+        "write_mesh_data": true
     }
 }

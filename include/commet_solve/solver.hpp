@@ -127,13 +127,38 @@ class FiniteStrainSolver
 	void write_compute_times();
 	void project_outputs();
 	void solve();
-	void set_output_vtus(const bool &value) { output_vtus = value; };
-	void set_write_fe_data(const bool &value) { this->write_fe_data_setting = value; };
-	void set_nr_threshold(const Number &new_threshold) { this->nr_threshold = new_threshold; };
-	Number get_nr_threshold() { return this->nr_threshold; };
-	void set_max_nr_iterations(const unsigned int &new_max_iterations) 
-    { this->max_nr_iterations = new_max_iterations; };
-	unsigned int get_max_nr_iterations() { return this->max_nr_iterations; };
+	void set_output_vtus(const bool &value)
+	{
+		output_vtus_setting = value;
+	};
+	void set_write_mesh_data(const bool &value)
+	{
+		this->write_fe_data_setting = value;
+	};
+	bool get_write_mesh_data() const
+	{
+		return this->write_fe_data_setting;
+	};
+	void set_write_fe_data(const bool &value)
+	{
+		this->write_fe_data_setting = value;
+	};
+	void set_nr_threshold(const Number &new_threshold)
+	{
+		this->nr_threshold = new_threshold;
+	};
+	Number get_nr_threshold()
+	{
+		return this->nr_threshold;
+	};
+	void set_max_nr_iterations(const unsigned int &new_max_iterations)
+	{
+		this->max_nr_iterations = new_max_iterations;
+	};
+	unsigned int get_max_nr_iterations()
+	{
+		return this->max_nr_iterations;
+	};
 
 	void add_dbc(std::unique_ptr<DirichletBC<dim>> dbc)
 	{
@@ -209,11 +234,12 @@ class FiniteStrainSolver
 
 	std::ostringstream timer_stream;
 	TimerOutput solver_timer;
-	bool output_vtus = true;
+	bool output_vtus_setting = true;
 	Number nr_threshold = 1e-6;
 	unsigned int max_nr_iterations = 7;
-	bool write_fe_data_setting = true;
+	bool write_fe_data_setting = false;
 	const string rel_mesh_data_pth = "./mesh_data";
+	const string rel_field_data_pth = "./field_data";
 
 	std::vector<std::pair<Number, std::string>> times_and_names;
 
@@ -720,8 +746,10 @@ void FiniteStrainSolver<dim, Number>::solve_linear_system()
 template <int dim, typename Number>
 void FiniteStrainSolver<dim, Number>::output()
 {
-	if (!output_vtus)
+	if (!output_vtus_setting)
 		return;
+
+	std::filesystem::create_directories(std::filesystem::path(rel_field_data_pth));
 
 	this->project_outputs();
 	TimerOutput::Scope section(solver_timer, "write_output");
@@ -767,12 +795,19 @@ void FiniteStrainSolver<dim, Number>::output()
 	ss << std::setw(n_digits) << std::setfill('0') << time.get_timestep();
 	const std::string rel_vtu_name = base_vtu_name + "_" + ss.str() + ".pvtu";
 	const std::string name = "./" + base_vtu_name;
-	data_out.write_vtu_with_pvtu_record("./", base_vtu_name, time.get_timestep(), mpi_communicator, n_digits);
+	data_out.write_vtu_with_pvtu_record(this->rel_field_data_pth+"/",
+                                     base_vtu_name,
+                                     time.get_timestep(),
+                                     mpi_communicator,
+                                     n_digits);
+
+    // data_out.write_vtu_with_pvtu_record(const std::string &directory, const std::string &filename_without_extension, const unsigned int counter, const int mpi_communicator)
 
 	if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
 	{
 		times_and_names.emplace_back(time.current(), rel_vtu_name);
-		const std::string pvd_name = "./solution.pvd";
+		// const std::string pvd_name = "./solution.pvd";
+		const std::string pvd_name = this->rel_field_data_pth+"/solution.pvd";
 		std::ofstream pvd_output(pvd_name);
 		DataOutBase::write_pvd_record(pvd_output, times_and_names);
 	}
@@ -906,89 +941,83 @@ void FiniteStrainSolver<dim, Number>::project_outputs()
 
 	Vector<Number> rhs_vector;
 
-
-    std::vector<Vector<Number>> vec_storage_vector(dim);
-    std::vector<Vector<Number>> ten_storage_vector(dim * dim);
+	std::vector<Vector<Number>> vec_storage_vector(dim);
+	std::vector<Vector<Number>> ten_storage_vector(dim * dim);
 
 	std::vector<Number> sca_qp_vals;
 	std::vector<Tensor<1, dim, Number>> vec_qp_vals;
 	std::vector<Tensor<2, dim, Number>> ten_qp_vals;
-    unsigned int last_n_qps = 0;
-    unsigned int last_n_nodes = 0;
+	unsigned int last_n_qps = 0;
+	unsigned int last_n_nodes = 0;
 
 	for (const CellData<dim, Number> &cell_data : this->fe_data.get_cell_data())
 	{
 		std::unique_ptr<MaterialDomain<dim, Number>> &mat_domain = this->material_domains.at(cell_data.material_id);
-        if(cell_data.n_qps != last_n_qps || cell_data.n_nodes != last_n_nodes){
-            sca_qp_vals.resize(cell_data.n_qps);
-            vec_qp_vals.resize(cell_data.n_qps);
-            ten_qp_vals.resize(cell_data.n_qps); 
+		if (cell_data.n_qps != last_n_qps || cell_data.n_nodes != last_n_nodes)
+		{
+			sca_qp_vals.resize(cell_data.n_qps);
+			vec_qp_vals.resize(cell_data.n_qps);
+			ten_qp_vals.resize(cell_data.n_qps);
 
-            rhs_vector.reinit(cell_data.n_nodes);
-            unsigned int count = 0;
-            for(unsigned int i=0; i<dim; i++){ 
-                vec_storage_vector.at(i).reinit(cell_data.n_nodes);
-                for(unsigned int j=0; j<dim; j++){
-                    ten_storage_vector.at(count).reinit(cell_data.n_nodes);
-                    count++; 
-                } 
-            }
+			rhs_vector.reinit(cell_data.n_nodes);
+			unsigned int count = 0;
+			for (unsigned int i = 0; i < dim; i++)
+			{
+				vec_storage_vector.at(i).reinit(cell_data.n_nodes);
+				for (unsigned int j = 0; j < dim; j++)
+				{
+					ten_storage_vector.at(count).reinit(cell_data.n_nodes);
+					count++;
+				}
+			}
 
-            sca_projection_vector.reinit(cell_data.sca_dofs.size());
-            vec_projection_vector.reinit(cell_data.vec_dofs.size());
-            ten_projection_vector.reinit(cell_data.ten_dofs.size()); 
+			sca_projection_vector.reinit(cell_data.sca_dofs.size());
+			vec_projection_vector.reinit(cell_data.vec_dofs.size());
+			ten_projection_vector.reinit(cell_data.ten_dofs.size());
 
-            last_n_qps = cell_data.n_qps;
-            last_n_nodes = cell_data.n_nodes;
-        }
+			last_n_qps = cell_data.n_qps;
+			last_n_nodes = cell_data.n_nodes;
+		}
 
 		for (auto &[flag, vec] : this->scalar_outputs)
 		{
-            // Get values at qps
+			// Get values at qps
 			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
 				sca_qp_vals.at(qp) = mat_domain->get_scalar_value(cell_data.id, qp, flag);
 
-            // Project qp values to nodes
-			cell_data.project_scalar_values(sca_qp_vals,
-                                   sca_projection_vector,
-                                   rhs_vector);
-            //
-            // Add element projections to global vector
+			// Project qp values to nodes
+			cell_data.project_scalar_values(sca_qp_vals, sca_projection_vector, rhs_vector);
+			//
+			// Add element projections to global vector
 			for (unsigned int i = 0; i < sca_projection_vector.size(); i++)
 				vec[cell_data.sca_dofs[i]] += sca_projection_vector[i];
 		}
 		for (auto &[flag, vec] : this->vector_outputs)
 		{
-            // Get values at qps
+			// Get values at qps
 			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
 				vec_qp_vals.at(qp) = mat_domain->get_vector_value(cell_data.id, qp, flag);
 
-            // Project qp values to nodes
-			cell_data.project_vector_values(vec_qp_vals,
-                                   vec_projection_vector,
-                                   rhs_vector,
-                                   vec_storage_vector,
-                                   fe_vec[cell_data.fe_index]);
+			// Project qp values to nodes
+			cell_data.project_vector_values(
+				vec_qp_vals, vec_projection_vector, rhs_vector, vec_storage_vector, fe_vec[cell_data.fe_index]);
 
-            // Add element projections to global vector
+			// Add element projections to global vector
 			for (unsigned int i = 0; i < vec_projection_vector.size(); i++)
 				vec[cell_data.vec_dofs[i]] += vec_projection_vector[i];
 		}
 		for (auto &[flag, vec] : this->tensor_outputs)
 		{
 
-            // Get values at qps
+			// Get values at qps
 			for (unsigned int qp = 0; qp < cell_data.n_qps; qp++)
 				ten_qp_vals.at(qp) = mat_domain->get_tensor_value(cell_data.id, qp, flag);
 
-            // Project qp values to nodes
-			cell_data.project_tensor_values(ten_qp_vals,
-                                   ten_projection_vector,
-                                   rhs_vector,
-                                   ten_storage_vector,
-                                   fe_ten[cell_data.fe_index]);
+			// Project qp values to nodes
+			cell_data.project_tensor_values(
+				ten_qp_vals, ten_projection_vector, rhs_vector, ten_storage_vector, fe_ten[cell_data.fe_index]);
 
-            // Add element projections to global vector
+			// Add element projections to global vector
 			for (unsigned int i = 0; i < ten_projection_vector.size(); i++)
 				vec[cell_data.ten_dofs[i]] += ten_projection_vector[i];
 		}
