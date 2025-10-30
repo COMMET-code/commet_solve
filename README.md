@@ -1,12 +1,15 @@
 # COMMET Solve
 
-Finite element solver focused on the performant integration of neural constitutive models (NCM)
+COMMET solve is finite element solver focused on batch-vectorized constitutive updates and performant integration of neural constitutive models (NCM). 
+It is a module that exists as a part of the computational mechanics and machine learning toolbox (COMMET).
 
-## Notes on contributing
-**Do not push to development**
-If you clone this repo, please create your own branch(es), and include your name in the start of the branch name.
+COMMET solve is currently in a beta testing stage.
+The source code and will be released publicly in a subsequent version.
 
-## Status
-This is still in development.
-A lot of functionality is still being ported over from an older codebase.
-The most key lacking functionality is the ability to output the mesh and results in an hdf5 file.
+A ready-to-go docker image is provided at
+https://hub.docker.com/repository/docker/benalheit/commet
+.
+
+
+## Building from source
+

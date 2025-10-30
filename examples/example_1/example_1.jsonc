@@ -1,0 +1,77 @@
+{
+    // Defining the mesh 
+    "mesh": {
+        // Indicating that we will use a built-in mesh (not reading one in from file)
+        "from": "built-in", 
+        // The type of built-in mesh that we will use
+        "type": "quarter_plate_with_hole",
+        // The order of the finite elements to use
+        "order": 1,
+        // Radius of the hole in the plate
+        "radius": 0.2,
+        // Length of the plate
+        "length": 1,
+        // Thickness of the plate
+        "thickness": 0.1,
+        // The number of times to refine the mesh of the geometry in-plane
+        "planar_refinements": 3,
+        // The number of times to refine the mesh of the geometry globally (through the thickness and in-plane)
+        "global_refinements": 1
+    },
+    // Defining the materials
+    "materials": [
+        {
+            "id": 0,
+            "type": "traditional",
+            "elasticity": {
+                "type": "neohookean",
+                "mu": 77,
+                "lambda": 115
+            }
+        }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.1,
+            "dirichlet_boundary_conditions": [
+                 {
+                     "type": "standard",
+                     "boundary_id": 1,
+                     "components": [0],
+                     "values": [0]
+                 },
+                 {
+                     "type": "standard",
+                     "boundary_id": 2,
+                     "components": [1],
+                     "values": [0]
+                 },
+                 {
+                     "type": "standard",
+                     "boundary_id": 3,
+                     "components": [2],
+                     "values": [0]
+                 },
+                 {
+                     "type": "standard",
+                     "boundary_id": 4,
+                     "components": [0, 1, 2],
+                     "values": [1, 0, 0]
+                 }
+            ],
+            "neumann_boundary_conditions": [],
+            "robin_boundary_conditions": []
+        }
+    ], 
+    "outputs": {
+         "scalar_outputs": ["I1"],
+         "vector_outputs": [ ],
+         "tensor_outputs": ["kirchhoff_stress", "C"]
+     },
+    "miscellaneous": {
+        "output_vtus": true,
+        "nr_threshold": 1e-6,
+        "max_nr_iterations": 5
+    }
+}

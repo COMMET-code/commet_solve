@@ -84,7 +84,7 @@ void NeumannBC<dim, Number>::initialize(const DoFHandler<dim, dim> &dof_handler,
 
                         vector<global_dof_index> local_dof_indices(dofs_per_face);
                         vector<Tensor<1, dim, Number>> normals(n_qps);
-                        vector<Number> jxw(n_qps);
+                        // vector<Number> jxw(n_qps);
                         vector<vector<Number>> N(n_qps, vector<Number>(nodes_per_face));
                         vector<vector<Tensor<1, dim, Number>>> B(n_qps, vector<Tensor<1, dim, Number>>(nodes_per_face));
 

@@ -8,6 +8,7 @@
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/tria.h>
 #include <nlohmann/json.hpp>
+#include <sstream>
 #include <string>
 
 namespace commet_solve::parse
@@ -23,15 +24,22 @@ enum class mesh_from
 	read
 };
 static const map<string, mesh_from> //
-	MESH_FROM({{"builtin", mesh_from::builtin}, {"read", mesh_from::read}});
+	MESH_FROM({{"built-in", mesh_from::builtin}, {"read", mesh_from::read}});
 
 enum class builtin_meshes
 {
 	cube,
-	cylinder
+	cylinder,
+	plate_with_hole,
+	quarter_plate_with_hole,
 };
 static const map<string, builtin_meshes> //
-	BUILTIN_MESHES({{"cube", builtin_meshes::cube}, {"cylinder", builtin_meshes::cylinder}});
+	BUILTIN_MESHES({
+    {"cube", builtin_meshes::cube},
+    {"plate_with_hole", builtin_meshes::plate_with_hole},
+    {"quarter_plate_with_hole", builtin_meshes::quarter_plate_with_hole},
+    {"cylinder", builtin_meshes::cylinder}
+});
 
 template <int dim, typename tri_type>
 void parse_builtin_mesh(const json &mesh_inp, tri_type &tri, std::map<std::string, unsigned int> &b_id_map)
@@ -51,6 +59,32 @@ void parse_builtin_mesh(const json &mesh_inp, tri_type &tri, std::map<std::strin
 		b_id_map["front"] = 6;
 		break;
 	}
+	case builtin_meshes::plate_with_hole: { 
+
+            labeled_hyper_rectangle_with_hole<dim>(tri, 
+                                           value_or_default<double>("length", mesh_inp, 1), 
+                                           value_or_default<double>("radius", mesh_inp, 0.25), 
+                                           value_or_default<double>("thickness", mesh_inp, 1), 
+                                           value_or_default<unsigned int>("planar_refinements", mesh_inp, 0), 
+                                           value_or_default<unsigned int>("global_refinements", mesh_inp, 0));
+
+		set_rectangular_boundary_ids<dim, tri_type>(tri);
+		break;
+
+        }
+	case builtin_meshes::quarter_plate_with_hole: { 
+
+            labeled_quarter_hyper_rectangle_with_hole<dim>(tri, 
+                                           value_or_default<double>("length", mesh_inp, 1), 
+                                           value_or_default<double>("radius", mesh_inp, 0.25), 
+                                           value_or_default<double>("thickness", mesh_inp, 1), 
+                                           value_or_default<unsigned int>("planar_refinements", mesh_inp, 0), 
+                                           value_or_default<unsigned int>("global_refinements", mesh_inp, 0));
+
+		set_rectangular_boundary_ids<dim, tri_type>(tri);
+		break;
+
+        }
 	case builtin_meshes::cylinder: {
 		throw std::logic_error("Cylinder builtin not implemented yet...");
 		break;
@@ -59,14 +93,11 @@ void parse_builtin_mesh(const json &mesh_inp, tri_type &tri, std::map<std::strin
 
 	if (refines > 0)
 		tri.refine_global(refines);
-	// return tri;
 }
 
 template <int dim, typename tri_type>
 void parse_mesh(const json &mesh_inp, tri_type &tri, std::map<std::string, unsigned int> &b_id_map)
 {
-	// string from = mesh_inp["from"].get<string>();
-	// switch (MESH_FROM.at(from))
 	switch (json_key_to_map_value("from", mesh_inp, MESH_FROM))
 	{
 	case mesh_from::builtin: {
@@ -74,10 +105,32 @@ void parse_mesh(const json &mesh_inp, tri_type &tri, std::map<std::string, unsig
 		return;
 	}
 	case mesh_from::read: {
-		// Triangulation<dim, dim> triangulation;
+		commet_solve::LOGGER.info("Reading mesh");
+
 		unsigned int refines = value_or_default("global_refines", mesh_inp, 0);
-		triangulation_from_json(tri, compulsory_value<std::string>("path", mesh_inp), b_id_map);
-		// tri.copy_triangulation(triangulation);
+		string pth_to_mesh = compulsory_value<std::string>("path", mesh_inp);
+		stringstream sspth_to_mesh(pth_to_mesh);
+		string file_name;
+		string extension;
+		commet_solve::LOGGER.info("starting get line...: " + pth_to_mesh);
+		while (std::getline(sspth_to_mesh, file_name, '/'))
+			;
+		stringstream ss_file_name(file_name);
+		commet_solve::LOGGER.info("file_name: " + file_name);
+		while (std::getline(ss_file_name, extension, '.'))
+			;
+		commet_solve::LOGGER.info("extension: " + extension);
+
+		if (extension == "msh")
+		{
+			GridIn<dim, dim> grid_in(tri);
+			grid_in.read_msh(pth_to_mesh);
+		}
+		else if (extension.substr(0, 4) == "json")
+			triangulation_from_json(tri, pth_to_mesh, b_id_map);
+		else
+			throw std::runtime_error("Could not determine type of mesh to be read for file extension: " + extension);
+
 		if (refines > 0)
 			tri.refine_global(refines);
 		break;

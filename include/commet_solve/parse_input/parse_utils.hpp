@@ -1,6 +1,7 @@
 #ifndef INCLUDE_PARSE_INPUT_PARSE_UTILS_HPP_
 #define INCLUDE_PARSE_INPUT_PARSE_UTILS_HPP_
 
+#include <array>
 #include <deal.II/base/tensor.h>
 #include <map>
 #include <nlohmann/json.hpp>
@@ -87,6 +88,24 @@ v_type  compulsory_vector(const string &key, const json &data)
 	else
 		throw std::logic_error("In file section '" + to_string(data) + "'. Number of entries for '" + key +
 							   "' is : " + to_string(vals.size()) + " but it must be " + to_string(dim) + ".");
+}
+
+template <unsigned int array_size, typename Number>
+array<Number, array_size> compulsory_array_zero_padded(const string &key, const json &data)
+{
+	vector<Number> vals = compulsory_value<vector<Number>>(key, data);
+    array<Number, array_size> out = {{0.0}};
+
+	if (vals.size() <= array_size)
+	{
+		for (unsigned int i = 0; i < vals.size(); i++)
+			out[i] = vals.at(i);
+
+		return out;
+	}
+	else
+		throw std::logic_error("In file section '" + to_string(data) + "'. Number of entries for '" + key +
+							   "' is : " + to_string(vals.size()) + " but it must be at most " + to_string(array_size) + ".");
 }
 
 } // namespace commet_solve::parse

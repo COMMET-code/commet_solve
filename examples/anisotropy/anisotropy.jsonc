@@ -1,0 +1,118 @@
+{
+    "mesh": {
+        "from": "builtin",
+        "type": "quarter_plate_with_hole",
+        "order": 1,
+        "radius": 0.2,
+        "planar_refinements": 1,
+        "global_refinements": 0
+    },
+    "materials": [
+        {
+            "id": 0,
+            "type": "traditional",
+            "orientation_vectors": ["fibre"],
+            "elasticity" : { 
+                // "type": "neohookean",
+                // "lambda": 2,
+                // "mu": 2
+                "type": "iso_vol",
+                "iso":{ 
+                    "type": "hgo",
+                    "a": 10,
+                    "b": 1,
+                    "as": [10],
+                    "bs": [1]
+                },
+                // "iso":{ 
+                //     "type": "isihara",
+                //     "c1": 10,
+                //     "c2": 10,
+                //     "c3": 10
+                // },
+                "vol":{ 
+                    "type": "square_and_log",
+                    "k": 10
+                }
+            }
+        }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.1,
+            "dirichlet_boundary_conditions": [
+                {
+                    "type": "standard",
+                    "boundary_id": 1,
+                    "components": [
+                        0
+                    ],
+                    "values": [
+                        0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": 4,
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        1,
+                        0,
+                        0
+                    ]
+                }
+                // {
+                //     "type": "pull_twist",
+                //     "boundary_id": 4,
+                //     "centre": [
+                //         0.5,
+                //         0.5,
+                //         0.5
+                //     ],
+                //     "axis": [
+                //         1,
+                //         0,
+                //         0
+                //     ],
+                //     "u": 1,
+                //     "theta": 4.0
+                // }
+            ],
+            "neumann_boundary_conditions": [],
+            "robin_boundary_conditions": []
+        }
+    ],
+    "fields": {
+        "scalar": [],
+        "vector": [
+            {
+                "name": "fibre",
+                "type": "analytical",
+                "y_func": "sin(2*x*pi)",
+                "x_func": "cos(2*x*pi)",
+                "z_func": "0"
+            }
+        ],
+        "tensor": []
+    },
+    "outputs": {
+        "scalar_outputs": [
+            "strain_energy"
+        ],
+        "vector_outputs": ["current_fibre_0"],
+        "tensor_outputs": [
+            "kirchhoff_stress",
+            "C"
+        ]
+    },
+    "miscellaneous": {
+        "output_vtus": true,
+        "nr_threshold": 1e-6,
+        "max_nr_iterations": 5
+    }
+}

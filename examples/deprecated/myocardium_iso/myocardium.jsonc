@@ -1,0 +1,109 @@
+{
+    "mesh": {
+        /* required: true
+        options:
+            "builtin" -- uses a mesh that the solver generates
+            "read" -- reads a mesh from file
+        */
+        "from": "read",
+        /* required: true (if using builtin)
+        options:
+            "cube" -- generates
+            "cylinder" -- reads a mesh from file
+        */
+        "path": "new_format_biv_fix_boundaries.json",
+        "order": 1,
+        "global_refines": 1
+    },
+    "materials": [
+        // {
+        //     "id": 0,
+        //     "type": "neohookean",
+        //     "lambda": 10000,
+        //     "mu":6900
+        // },
+        {
+            "id": 0,
+            "type": "batch_vectorized_ncm",
+            "evaluation_method": "optimized",
+            "batch_size": 512,
+            // "evaluation_method": "using_C",
+            // "path_to_torchscript": "../resources/torchscripts/opt/opt-neohookean-micnn-cpu.torchscript"
+            "path_to_torchscript": "opt-neohookean-micnn-cpu.torchscript"
+        }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.5,
+            "dirichlet_boundary_conditions": [
+            ],
+            "neumann_boundary_conditions": [
+                {
+                    "type": "pressure",
+                    "boundary_id": "Fluid_Cavity_LV",
+                    // "pressure": -16491
+                    "pressure": -0.025
+                },
+                {
+                    "type": "pressure",
+                    "boundary_id": "Fluid_Cavity_RV",
+                    // "pressure": -4171
+                    "pressure": -0.0125
+                },
+                {
+                    "type": "normal_robin",
+                    "boundary_id": "Exterior_V",
+                    "stiffness": 0.05
+                }
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "LV_TIE_AA",
+                //     "stiffness": 0.01
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "LV_TIE_LA",
+                //     "stiffness": 0.01
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "RV_TIE_PT",
+                //     "stiffness": 0.01
+                // },
+                // {
+                //     "type": "robin",
+                //     "boundary_id": "RV_TIE_RA",
+                //     "stiffness": 0.01
+                // }
+
+
+
+            ],
+            "robin_boundary_conditions": [
+
+            ]
+        }
+    ],
+    "outputs": {
+        "scalar_outputs": [
+            //"strain_energy"
+        ],
+        "vector_outputs": [],
+        "tensor_outputs": [
+            "kirchhoff_stress",
+            "C"
+        ]
+    },
+    "sparse_solver_settings": {
+        // "solver_type": "direct",
+        "solver_type": "cg",
+        // "preconditioner_type": "amg",
+        "symmetric": true
+    },
+    "miscellaneous": {
+        "output_vtus": true,
+        "nr_threshold": 1e-7,
+        "max_nr_iterations": 4
+    }
+}

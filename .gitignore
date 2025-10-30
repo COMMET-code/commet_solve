@@ -16,3 +16,8 @@ external_builds/
 *.pvtu
 *.pvd
 *.vtk
+mesh_data/
+**/compute_times.json
+**/commet_solver.log
+**/problem_size.json
+hpc/

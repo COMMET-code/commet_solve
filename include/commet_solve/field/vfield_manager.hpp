@@ -2,6 +2,8 @@
 #define INCLUDE_FIELD_VFIELD_MANAGER_HPP_
 
 #include "vector_field.hpp"
+#include "../logger.hpp"
+#include "../config.hpp"
 
 namespace commet_solve
 {
@@ -21,7 +23,9 @@ class VectorFieldManager
 						std::vector<Tensor<1, dim, Number>> &qp_values,
 						const std::string &field_name)
 	{
-		fields[field_name]->evaluate_field(cell, qp_values, field_name);
+        // DEBUG_MSG("Evaluating in field manager")
+		// fields[field_name]->evaluate_field(cell, qp_values, field_name);
+		fields.at(field_name)->evaluate_field(cell, qp_values, field_name);
 	};
 
 	void add_field(const Triangulation<dim, dim> *tri,

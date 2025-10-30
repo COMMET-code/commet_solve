@@ -5,6 +5,7 @@
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/mapping_q.h>
 #include <deal.II/grid/grid_out.h>
+#include <deal.II/grid/grid_in.h>
 #include <deal.II/grid/tria.h>
 
 #include <deal.II/grid/grid_generator.h>
@@ -205,6 +206,17 @@ void field_test(tri_type *tri)
 	const std::string rel_vtu_name = base_vtu_name + "_" + ss.str() + ".pvtu";
 	const std::string name = "./" + base_vtu_name;
 	data_out.write_vtu_with_pvtu_record("./", base_vtu_name, 0, MPI_COMM_WORLD, n_digits);
+}
+
+template<int dim>
+void triangulation_from_msh(Triangulation<dim, dim> &tria,
+							 const std::string &path_to_file)
+{
+
+    GridIn<dim, dim> grid_in(tria);
+    grid_in.read_msh(path_to_file);
+    // output_triangulation_vtk<dim>("msh_tri", tria);
+
 }
 
 void triangulation_from_json(Triangulation<3, 3> &tria,

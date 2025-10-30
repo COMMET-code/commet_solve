@@ -11,7 +11,12 @@ using namespace dealii;
  template<int dim, typename Number = double>
 class DirichletBC {
 public:
-    DirichletBC() = default;
+    // DirichletBC() = default;
+    DirichletBC(const unsigned int & boundary_id,
+                const std::vector<unsigned int> & components)
+    : boundary_id(boundary_id)
+    , components(components) 
+    {};
     DirichletBC(DirichletBC &&) = delete;
     DirichletBC(const DirichletBC &) = delete;
     DirichletBC &operator=(DirichletBC &&) = delete;
@@ -24,6 +29,8 @@ public:
                const Number &time,
                const Number &d_time)=0;
 
+	const unsigned int boundary_id;
+	const std::vector<unsigned int> components;
 private:
     
 };

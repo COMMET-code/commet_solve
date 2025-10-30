@@ -15,6 +15,7 @@
 
 #include "commet_solve/boundary_conditions/fully_defined_dbc.hpp"
 #include "commet_solve/boundary_conditions/twist_pull.hpp"
+#include "commet_solve/logger.hpp"
 #include "commet_solve/material_domain/ncm_domain/batch_vectorized_domain.hpp"
 #include "commet_solve/material_domain/ncm_domain/globally_vectorized_domain.hpp"
 #include "commet_solve/mesh/mesh.hpp"
@@ -43,6 +44,14 @@ void tenth_test(const std::string &input_path)
 	commet_solve::parse::parse_input_file(inp);
 }
 
+void gmsh_mesh_test(const std::string &input_path)
+{
+
+	const int dim = 3;
+	Triangulation<dim, dim> tri;
+	commet_solve::triangulation_from_msh(tri, input_path);
+}
+
 void mesh_test(const std::string &input_path)
 {
 
@@ -68,6 +77,13 @@ void mesh_test(const std::string &input_path)
 int main(int argc, char *argv[])
 {
 
+	dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
+	commet_solve::LOGGER.init();
+
+	commet_solve::LOGGER.add_std_out();
+
+	torch::set_num_threads(1);
+
 	// dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
 	// torch::set_num_threads(1);
 
@@ -77,28 +93,47 @@ int main(int argc, char *argv[])
 	try
 	{
 
-		dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
-		torch::set_num_threads(1);
-
 		std::string inp_path(argv[1]);
 		tenth_test(inp_path);
 		// mesh_test(inp_path);
+		// gmsh_mesh_test(inp_path);
 	}
 	catch (std::exception &exc)
 	{
-		std::cerr << std::endl << std::endl << "----------------------------------------------------" << std::endl;
-		std::cerr << "Exception on processing: " << std::endl
-				  << exc.what() << std::endl
-				  << "Aborting!" << std::endl
-				  << "----------------------------------------------------" << std::endl;
+
+		// std::cerr << std::endl << std::endl << "----------------------------------------------------" << std::endl;
+		// std::cerr << "Exception on processing: " << std::endl
+		// 		  << exc.what() << std::endl
+		// 		  << "Aborting!" << std::endl
+		// 		  << "----------------------------------------------------" << std::endl;
+
+		commet_solve::LOGGER.info("----------------------------------------------------");
+		commet_solve::LOGGER.info("Exception on processing: ");
+		commet_solve::LOGGER.info(exc.what());
+		commet_solve::LOGGER.info("Aborting!");
+		commet_solve::LOGGER.info("----------------------------------------------------");
+
 		return 1;
 	}
 	catch (...)
 	{
-		std::cerr << std::endl << std::endl << "----------------------------------------------------" << std::endl;
-		std::cerr << "Unknown exception!" << std::endl
-				  << "Aborting!" << std::endl
-				  << "----------------------------------------------------" << std::endl;
+
+		// std::cerr << std::endl << std::endl << "----------------------------------------------------" << std::endl;
+		// std::cerr << "Unknown exception!" << std::endl
+		// 		  << "Aborting!" << std::endl
+		// 		  << "----------------------------------------------------" << std::endl;
+		// return 1;
+
+		commet_solve::LOGGER.info("----------------------------------------------------");
+		commet_solve::LOGGER.info("Unknown exception!");
+		commet_solve::LOGGER.info("Aborting!");
+		commet_solve::LOGGER.info("----------------------------------------------------");
+
+		// std::cerr << std::endl << std::endl << "----------------------------------------------------" << std::endl;
+		// std::cerr << "Unknown exception!" << std::endl
+		// 		  << "Aborting!" << std::endl
+		// 		  << "----------------------------------------------------" << std::endl;
+
 		return 1;
 	}
 

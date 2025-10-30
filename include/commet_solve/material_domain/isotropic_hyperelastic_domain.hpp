@@ -1,46 +1,68 @@
 #ifndef INCLUDE_MATERIAL_DOMAIN_ISOTROPIC_HYPERELASTIC_DOMAIN_HPP_
 #define INCLUDE_MATERIAL_DOMAIN_ISOTROPIC_HYPERELASTIC_DOMAIN_HPP_
 
+#include "../config.hpp"
+#include "../logger.hpp"
 #include "commet_solve/output/output_flags.hpp"
 #include "material_domain.hpp"
+#include "material_points.hpp"
+#include "materials/hyperelastic_material.hpp"
 
 #include <deal.II/base/symmetric_tensor.h>
 #include <deal.II/physics/elasticity/kinematics.h>
 #include <deal.II/physics/elasticity/standard_tensors.h>
+#include <memory>
 
 namespace commet_solve
 {
 
 template <int dim, typename Number = double>
-class IsotropicHyperelasticDomain : public MaterialDomain<dim, Number>
+class HyperelasticDomain : public MaterialDomain<dim, Number>
 {
   public:
-	IsotropicHyperelasticDomain() = default;
-	IsotropicHyperelasticDomain(IsotropicHyperelasticDomain &&) = delete;
-	IsotropicHyperelasticDomain(const IsotropicHyperelasticDomain &) = delete;
-	IsotropicHyperelasticDomain &operator=(IsotropicHyperelasticDomain &&) = delete;
-	IsotropicHyperelasticDomain &operator=(const IsotropicHyperelasticDomain &) = delete;
-	~IsotropicHyperelasticDomain() = default;
+	HyperelasticDomain() = default;
+	HyperelasticDomain(HyperelasticDomain &&) = delete;
+	HyperelasticDomain(const HyperelasticDomain &) = delete;
+	HyperelasticDomain &operator=(HyperelasticDomain &&) = delete;
+	HyperelasticDomain &operator=(const HyperelasticDomain &) = delete;
+	~HyperelasticDomain() = default;
+
+	void set_material_model(std::unique_ptr<HyperelasticMaterial<dim, Number>> material_model){
+        this->material_model = move(material_model);
+    };
 
 	void add_entry(const dealii::types::global_cell_index &cell, const unsigned int &qp) override
 	{
-		qp_data[{cell, qp}] = MinimalMaterialPointData<dim, Number>();
+		qp_data[{cell, qp}] = HyperelasticMaterialPointData<dim, Number>();
 	};
 
-
 	void add_entry(const dealii::types::global_cell_index &cell_idx,
-						   const DoFCellAccessor<dim, dim, false> &/*cell*/,
-						   const FEValues<dim, dim> &fe_values,
-						   const ScalarFieldManager<dim, Number> &/*scalar_fields*/,
-						   const VectorFieldManager<dim, Number> &/*vector_fields*/,
-						   const TensorFieldManager<dim, Number> & /*tensor_fields*/) 
-    override{
+				   const DoFCellAccessor<dim, dim, false> &cell,
+				   const FEValues<dim, dim> &fe_values,
+				   ScalarFieldManager<dim, Number> & /*scalar_fields*/,
+				   VectorFieldManager<dim, Number> &vector_fields,
+				   TensorFieldManager<dim, Number> & /*tensor_fields*/) override
+	{
 
-        for(unsigned int qp=0; qp<fe_values.n_quadrature_points; qp++)
-            qp_data[{cell_idx, qp}] = MinimalMaterialPointData<dim, Number>();
+		// const DoFCellAccessor<dim, dim, false> &cell,
+		// 						std::vector<Tensor<1, dim, Number>> &qp_values,
+		// 						const std::string &field_name
 
-    };
+		vector<vector<Tensor<1, dim, Number>>> orientation_vectors(
+			orientation_field_names.size(), vector<Tensor<1, dim, Number>>(fe_values.n_quadrature_points));
+		// commet_solve::LOGGER.info("Getting field");
+		for (unsigned int i = 0; i < orientation_field_names.size(); i++)
+			vector_fields.evaluate_field(cell, orientation_vectors.at(i), orientation_field_names.at(i));
 
+		for (unsigned int qp = 0; qp < fe_values.n_quadrature_points; qp++)
+		{
+			qp_data[{cell_idx, qp}] = HyperelasticMaterialPointData<dim, Number>();
+
+			// commet_solve::LOGGER.info("Setting field");
+			for (unsigned int i = 0; i < orientation_field_names.size(); i++)
+				qp_data[{cell_idx, qp}].orientation_vectors[i] = orientation_vectors.at(i).at(qp);
+		}
+	};
 
 	void update_F(const dealii::types::global_cell_index &cell,
 				  const unsigned int &qp,
@@ -56,7 +78,7 @@ class IsotropicHyperelasticDomain : public MaterialDomain<dim, Number>
 				  SymmetricTensor<2, dim, Number> &tau,
 				  SymmetricTensor<4, dim, Number> &cc) override
 	{
-		const MinimalMaterialPointData<dim, Number> &point = qp_data.at({cell, qp});
+		const HyperelasticMaterialPointData<dim, Number> &point = qp_data.at({cell, qp});
 
 		F = point.F;
 		psi = point.psi;
@@ -120,25 +142,39 @@ class IsotropicHyperelasticDomain : public MaterialDomain<dim, Number>
 											  SymmetricTensorEigenvectorMethod::jacobi);
 			return vecs_and_vals[2].first * vecs_and_vals[2].second / vecs_and_vals[2].second.norm();
 		}
+		case vector_output_flag::current_fibre_0: {
+                return qp_data.at({cell, qp}).F * qp_data.at({cell, qp}).orientation_vectors[0];
+
+            }
 		default:
 			return MaterialDomain<dim, Number>::get_vector_value(cell, qp, flag);
 		}
 	};
 
-
 	virtual Tensor<2, dim, Number> get_tensor_value(const dealii::types::global_cell_index &cell,
 													const unsigned int &qp,
 													const tensor_output_flag &flag) override
 	{
-		switch (flag){
-            case tensor_output_flag::kirchhoff_stress: { return qp_data.at({cell, qp}).tau; }
-            case tensor_output_flag::F: { return qp_data.at({cell, qp}).F; }
-            case tensor_output_flag::B: { return Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F); }
-            case tensor_output_flag::C: { return Physics::Elasticity::Kinematics::C(qp_data.at({cell, qp}).F); }
-            case tensor_output_flag::E: { return Physics::Elasticity::Kinematics::E(qp_data.at({cell, qp}).F); }
-            default:
+		switch (flag)
+		{
+		case tensor_output_flag::kirchhoff_stress: {
+			return qp_data.at({cell, qp}).tau;
+		}
+		case tensor_output_flag::F: {
+			return qp_data.at({cell, qp}).F;
+		}
+		case tensor_output_flag::B: {
+			return Physics::Elasticity::Kinematics::b(qp_data.at({cell, qp}).F);
+		}
+		case tensor_output_flag::C: {
+			return Physics::Elasticity::Kinematics::C(qp_data.at({cell, qp}).F);
+		}
+		case tensor_output_flag::E: {
+			return Physics::Elasticity::Kinematics::E(qp_data.at({cell, qp}).F);
+		}
+		default:
 			return MaterialDomain<dim, Number>::get_tensor_value(cell, qp, flag);
-        }
+		}
 	};
 
 	void compute_constitutive_behaviour() override
@@ -147,16 +183,27 @@ class IsotropicHyperelasticDomain : public MaterialDomain<dim, Number>
 			this->constitutive_equation(point_data);
 	};
 
-  protected:
-	std::unordered_map<point_index, MinimalMaterialPointData<dim, Number>, PointIndexHash> qp_data;
+	vector<string> orientation_field_names;
 
-	virtual void constitutive_equation(MinimalMaterialPointData<dim, Number> &data) = 0;
+  protected:
+	std::unordered_map<point_index, HyperelasticMaterialPointData<dim, Number>, PointIndexHash> qp_data;
+    std::unique_ptr<HyperelasticMaterial<dim, Number>> material_model;
+	virtual void constitutive_equation(HyperelasticMaterialPointData<dim, Number> &data){
+        material_model->evaluate_model(
+        data.F,
+        data.orientation_vectors, 
+        data.psi,
+        data.tau,
+        data.cc
+    );
+
+    };
 
   private:
 };
 
 template <int dim, typename Number = double>
-class NeoHookeanDomain : public IsotropicHyperelasticDomain<dim, Number>
+class NeoHookeanDomain : public HyperelasticDomain<dim, Number>
 {
   public:
 	NeoHookeanDomain(const Number &lambda, const Number &mu)
@@ -170,7 +217,7 @@ class NeoHookeanDomain : public IsotropicHyperelasticDomain<dim, Number>
 	~NeoHookeanDomain() = default;
 
   protected:
-	void constitutive_equation(MinimalMaterialPointData<dim, Number> &data) override
+	void constitutive_equation(HyperelasticMaterialPointData<dim, Number> &data) override
 	{
 		using namespace Physics::Elasticity;
 

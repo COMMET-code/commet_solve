@@ -7,6 +7,7 @@
 namespace commet_solve{
 
 using namespace dealii;
+#define SHOW_DEBUG_MESSAGES
 
 namespace LA
 {
@@ -20,6 +21,9 @@ using namespace dealii::LinearAlgebraTrilinos;
 #error DEAL_II_WITH_PETSC or DEAL_II_WITH_TRILINOS required
 #endif
 } // namespace LA
+//
+
+static const unsigned int N_ORIENTATION_VECS=3;
 
 
 }

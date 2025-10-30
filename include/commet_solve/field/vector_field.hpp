@@ -2,6 +2,7 @@
 #define INCLUDE_FIELD_VECTOR_FIELD_HPP_
 
 #include "../config.hpp"
+#include "../logger.hpp"
 
 #include <deal.II/base/quadrature_lib.h>
 
@@ -76,6 +77,8 @@ class ElementWiseVectorField : public VectorField<dim, Number>
 						std::vector<Tensor<1, dim, Number>> &qp_values,
 						const std::string &field_name) override
 	{
+
+        DEBUG_MSG("Evaluating field")
 		const auto &field_cell = cell.as_dof_handler_iterator(df);
 		fe_values.reinit(field_cell);
 		const auto &present_fe_values = fe_values.get_present_fe_values();
@@ -168,7 +171,7 @@ class AnalyticalVectorField : public VectorField<dim, Number>
 
 		, df(*tri)
 		, fe(FESystem<dim, dim>(FE_SimplexP<dim>(1), dim), FESystem<dim, dim>(FE_Q<dim>(1), dim))
-		, fe_values(mapping, fe, quadrature_formula, update_values)
+		, fe_values(mapping, fe, quadrature_formula, update_values | update_quadrature_points)
 	{
 
 		for (const auto &cell : df.active_cell_iterators())
@@ -241,7 +244,9 @@ class AnalyticalVectorField : public VectorField<dim, Number>
 						const std::string & /*field_name*/) override
 	{
 
+        // DEBUG_MSG("Evaluating field")
 		const auto &field_cell = cell.as_dof_handler_iterator(df);
+        // DEBUG_MSG("Reiniting cell")
 		fe_values.reinit(field_cell);
 		const auto &present_fe_values = fe_values.get_present_fe_values();
 
@@ -253,12 +258,15 @@ class AnalyticalVectorField : public VectorField<dim, Number>
 
 	void evaluate_field_at_point(const Point<dim> &p, Tensor<1, dim, Number> &t)
 	{
+        // DEBUG_MSG("Setting position")
 		x = p[0];
 		y = p[1];
 		z = p[2];
+        // DEBUG_MSG("Evaluating expressions")
 		t[0] = expression_x.value();
 		t[1] = expression_y.value();
 		t[2] = expression_z.value();
+        // DEBUG_MSG("Done")
 	}
 
 	void add_field(const std::string & /*name*/,

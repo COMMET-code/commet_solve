@@ -35,7 +35,23 @@
             "id": 0,
             "type": "neohookean",
             "mu": 2,
-            "lambda": 2
+            "lambda": 2,
+            "orientation_vectors": ["test"],
+            "elasticity" : { 
+                "type": "iso_vol",
+                "iso":{ 
+                    "type": "HGO",
+                    "a": 10,
+                    "b": 2,
+                    "as": [1, 1, 1],
+                    "bs": [1, 1, 1]
+                    //cdb275
+                },
+                "vol":{ 
+                    "type": "square_and_log",
+                    "k": 10
+                }
+            }
         }
     ],
     "stages": [
@@ -113,7 +129,7 @@
         "scalar_outputs": [
             "strain_energy"
         ],
-        "vector_outputs": [],
+        "vector_outputs": ["current_fibre_0"],
         "tensor_outputs": [
             "kirchhoff_stress",
             "C"

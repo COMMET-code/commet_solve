@@ -23,14 +23,25 @@ namespace commet_solve
 
 using namespace dealii;
 
-template <int dim, typename Number = double>
-struct MinimalMaterialPointData
-{
-	Tensor<2, dim, Number> F;
-	Number psi;
-	SymmetricTensor<2, dim, Number> tau;
-	SymmetricTensor<4, dim, Number> cc;
-};
+
+// template <int dim, typename Number = double>
+// struct MaterialPointData
+// {
+// 	unsigned int el_id;
+// 	unsigned int qp;
+//     std::array<Tensor<1, dim, Number>, N_ORIENTATION_VECS> orientation_vectors;
+// 	Point<dim, Number> position;
+// };
+
+
+// template <int dim, typename Number = double>
+// struct HyperelasticMaterialPointData : MaterialPointData<dim, Number>
+// {
+// 	Number psi;
+// 	Tensor<2, dim, Number> F;
+// 	SymmetricTensor<2, dim, Number> tau;
+// 	SymmetricTensor<4, dim, Number> cc;
+// };
 
 enum class MaterialDomainState
 {
@@ -68,9 +79,9 @@ class MaterialDomain
 	virtual void add_entry(const dealii::types::global_cell_index &cell_idx,
 						   const DoFCellAccessor<dim, dim, false> &cell,
 						   const FEValues<dim, dim> &fe_values,
-						   const ScalarFieldManager<dim, Number> &scalar_fields,
-						   const VectorFieldManager<dim, Number> &vector_fields,
-						   const TensorFieldManager<dim, Number> &tensor_fields) = 0;
+						    ScalarFieldManager<dim, Number> &scalar_fields,
+						    VectorFieldManager<dim, Number> &vector_fields,
+						    TensorFieldManager<dim, Number> &tensor_fields) = 0;
 
 	virtual void update_F(const dealii::types::global_cell_index &cell,
 						  const unsigned int &qp,

@@ -135,7 +135,7 @@ struct CellData
 	std::vector<types::global_dof_index> global_dofs;
 
 	std::vector<Number> jxw;							// Shape [n_qps]
-	std::vector<std::vector<Number>> project_N;					// Shape [n_qps, n_nodes]
+	std::vector<std::vector<Number>> project_N;			// Shape [n_qps, n_nodes]
 	std::vector<std::vector<Number>> N;					// Shape [n_qps, n_nodes]
 	std::vector<std::vector<Tensor<1, dim, Number>>> B; // Shape [n_qps, n_nodes, dim]
 
@@ -143,8 +143,10 @@ struct CellData
 	std::vector<types::global_dof_index> sca_dofs;
 	std::vector<types::global_dof_index> vec_dofs;
 	std::vector<types::global_dof_index> ten_dofs;
-	// const FENumbering<dim> numbering;
 };
+
+
+
 
 template <int dim, typename Number = double>
 class FEData

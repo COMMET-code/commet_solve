@@ -5,7 +5,8 @@
 #include <deal.II/base/types.h>
 #include <vector>
 
-namespace commet_solve{
+namespace commet_solve
+{
 using namespace std;
 using namespace dealii;
 using namespace dealii::types;
@@ -191,7 +192,6 @@ class SurfaceElement
 	const vector<global_dof_index> dofs;
 };
 
+} // namespace commet_solve
 
-}
-
-#endif  // INCLUDE_FE_DATA_SURFACE_ELEMENT_HPP_
+#endif // INCLUDE_FE_DATA_SURFACE_ELEMENT_HPP_

@@ -24,6 +24,9 @@ namespace commet_solve::parse{
 using json = nlohmann::json;
 
 void parse_input_file(const json & inp_file_contents){
+
+
+    commet_solve::LOGGER.add_file("./commet_solver.log");
     const int dim = 3;
     typedef double Number;
 
@@ -33,10 +36,12 @@ void parse_input_file(const json & inp_file_contents){
 	// parallel::distributed::Triangulation<dim> tri(MPI_COMM_WORLD);
 	//     parse_mesh<dim>(compulsory_value<json>("mesh", inp_file_contents), tri, b_id_map);
 
-    std::vector<types::coarse_cell_id> coarse_cell_index_to_coarse_cell_id;
+    std::vector<types::coarse_cell_id> coarse_cell_index_to_coarse_cell_id; 
+    commet_solve::LOGGER.info("Creating Triangulation");
 	parallel::fullydistributed::Triangulation<dim, dim> tria_pft(MPI_COMM_WORLD);
     {
         Triangulation<dim> tri;
+        // parse_mesh<dim>(compulsory_value<json>("mesh", inp_file_contents), tri, b_id_map);
         parse_mesh<dim>(compulsory_value<json>("mesh", inp_file_contents), tri, b_id_map);
 
         GridTools::partition_triangulation(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD), tri);
@@ -50,18 +55,25 @@ void parse_input_file(const json & inp_file_contents){
     }
 
 
+    commet_solve::LOGGER.info("Instantiating solver");
     const unsigned int order = value_or_default<unsigned int>("order", compulsory_value<json>("mesh", inp_file_contents), 1);
 	FiniteStrainSolver<dim, double> solver(&tria_pft, time, coarse_cell_index_to_coarse_cell_id, order);
 
+    // Setting sparse solver
+    solver.set_sparse_solver_settings(value_or_default<json>("sparse_solver_settings", inp_file_contents, {}));
+
     // Parse materials
+    commet_solve::LOGGER.info("Parsing materials...");
     parse_materials<dim>(compulsory_value<json>("materials", inp_file_contents), solver);
 
     // Parse stages
+    commet_solve::LOGGER.info("Parsing stages...");
     parse_stages<dim>(compulsory_value<json>("stages", inp_file_contents),
                       solver,
                       b_id_map);
 
     // parse_outputs_flags<dim>(compulsory_value<json>("outputs", inp_file_contents), solver);
+    commet_solve::LOGGER.info("Parsing output settings...");
     parse_outputs_flags<dim>(value_or_default<json>("outputs", inp_file_contents, {}), solver);
 
     parse_fields<dim, Number>(value_or_default<json>("fields", inp_file_contents, {}),
@@ -75,6 +87,7 @@ void parse_input_file(const json & inp_file_contents){
     }
 
 
+    commet_solve::LOGGER.info("initializing solver...");
     solver.initialize();
     solver.solve();
 

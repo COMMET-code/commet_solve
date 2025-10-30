@@ -46,8 +46,8 @@ class FullyDefinedDBC : public DirichletBC<dim, Number>
 			   const Number &time,
 			   const Number &d_time) override;
 
-	const unsigned int boundary_id;
-	const std::vector<unsigned int> components;
+	// const unsigned int boundary_id;
+	// const std::vector<unsigned int> components;
 	const unsigned int n_components;
 	const std::vector<Number> end_values;
 	const Number end_time;
@@ -60,9 +60,9 @@ FullyDefinedDBC<dim, Number>::FullyDefinedDBC(const unsigned int &bc_id,
 											  const std::vector<unsigned int> &components,
 											  const std::vector<Number> &end_values,
 											  const Number &end_time)
-	: DirichletBC<dim, Number>()
-	, boundary_id(bc_id)
-	, components(components)
+	: DirichletBC<dim, Number>(bc_id, components)
+	// , boundary_id(bc_id)
+	// , components(components)
 	, n_components(components.size())
 	, end_values(end_values)
 	, end_time(end_time)
@@ -99,7 +99,7 @@ void FullyDefinedDBC<dim, Number>::apply(const DoFHandler<dim> &dof_handler,
 	// Iterate over the vector of pairs of (index, value)
 	for (unsigned int i = 0; i < n_components; i++)
 	{
-		const unsigned int component = components.at(i);
+		const unsigned int component = this->components.at(i);
 		prescribed_indices.set(component, true);
 		prescribed_values.at(component) = time * end_values.at(i) / end_time;
 		prescribed_values.at(component) -= (time - d_time) * end_values.at(i) / end_time;

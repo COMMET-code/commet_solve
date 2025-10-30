@@ -247,7 +247,7 @@ RotateBoundaryCondition<dim, Number>::RotateBoundaryCondition(const unsigned int
 															  const Number &start_angle,
 															  const Number &start_u,
 															  const Number &start_time)
-	: DirichletBC<dim, Number>()
+	: DirichletBC<dim, Number>(bc_id, {0, 1, 2})
 	, boundary_id(bc_id)
 	, centre(centre)
 	, axis(axis)

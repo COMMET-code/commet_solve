@@ -10,6 +10,7 @@
 #include "commet_solve/boundary_conditions/constant_nbc.hpp"
 #include "commet_solve/boundary_conditions/pressure_nbc.hpp"
 #include "commet_solve/boundary_conditions/robin_bc.hpp"
+#include "commet_solve/boundary_conditions/normal_robin_bc.hpp"
 #include <memory>
 
 namespace commet_solve::parse
@@ -27,11 +28,33 @@ enum class dbcs
 static const map<string, dbcs> //
 	DBCS({{"standard", dbcs::standard}, {"pull_twist", dbcs::pull_twist}});
 
+unsigned int 
+get_bid(const json &spec, 
+        const std::map<std::string, unsigned int> &b_id_map ){
+    const string key = "boundary_id";
+
+	if (spec.contains(key)){
+        if(spec[key].is_string()) 
+            return b_id_map.at(spec[key].get<string>());
+        else if(spec[key].is_number_integer()) 
+            return spec[key].get<unsigned int>();
+        else
+		throw std::logic_error("Value for boundary_id in the following file section is invalid: "+to_string(spec));
+    }
+	else
+		throw std::logic_error("Required key '" + key + "' is missing from file section: '" + to_string(spec) + "'.");
+}
+
 template <int dim, typename Number>
-void parse_dbc(const json &dbc_spec, Stage<dim, Number> *stage, std::map<std::string, unsigned int> &b_id_map)
+void parse_dbc(const json &dbc_spec,
+               Stage<dim, Number> *stage,
+               std::map<std::string, unsigned int> &b_id_map)
 {
 	// const unsigned int b_id = compulsory_value<unsigned int>("boundary_id", dbc_spec);
-	const unsigned int b_id = b_id_map.at(compulsory_value<std::string>("boundary_id", dbc_spec));
+
+	// const unsigned int b_id = b_id_map.at(compulsory_value<std::string>("boundary_id",
+	//                                                                      dbc_spec)); 
+    const unsigned int b_id = get_bid(dbc_spec, b_id_map);
 
 	switch (json_key_to_map_value("type", dbc_spec, DBCS))
 	{
@@ -60,16 +83,22 @@ enum class nbcs
 {
 	constant,
 	pressure,
-	robin
+	robin,
+	normal_robin
 };
 static const map<string, nbcs> //
-	NBCS({{"constant", nbcs::constant}, {"pressure", nbcs::pressure}, {"robin", nbcs::robin}});
+	NBCS({{"constant", nbcs::constant},//
+    {"pressure", nbcs::pressure}, //
+    {"robin", nbcs::robin},//
+    {"normal_robin", nbcs::normal_robin}
+});
 template <int dim, typename Number>
 void parse_nbc(const json &nbc_spec, Stage<dim, Number> *stage, std::map<std::string, unsigned int> &b_id_map)
 {
 
 	// const unsigned int b_id = compulsory_value<unsigned int>("boundary_id", nbc_spec);
-	const unsigned int b_id = b_id_map.at(compulsory_value<std::string>("boundary_id", nbc_spec));
+    const unsigned int b_id = get_bid(nbc_spec, b_id_map);
+	// const unsigned int b_id = b_id_map.at(compulsory_value<std::string>("boundary_id", nbc_spec));
 
 	switch (json_key_to_map_value("type", nbc_spec, NBCS))
 	{
@@ -85,6 +114,10 @@ void parse_nbc(const json &nbc_spec, Stage<dim, Number> *stage, std::map<std::st
 	}
 	case nbcs::robin: {
 		stage->add_nbc(make_unique<RobinBC<dim, Number>>(b_id, compulsory_value<Number>("stiffness", nbc_spec)));
+		return;
+	}
+	case nbcs::normal_robin: {
+		stage->add_nbc(make_unique<NormalRobinBC<dim, Number>>(b_id, compulsory_value<Number>("stiffness", nbc_spec)));
 		return;
 	}
 	}
