@@ -7,7 +7,7 @@
 namespace commet_solve{
 
 using namespace dealii;
-#define SHOW_DEBUG_MESSAGES
+// #define SHOW_DEBUG_MESSAGES
 
 namespace LA
 {

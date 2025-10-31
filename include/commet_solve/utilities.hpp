@@ -5,6 +5,7 @@
 #include <utility>
 #include <nlohmann/json.hpp>
 
+#include <fmt/core.h>
 #include "types.hpp"
 
 namespace commet_solve
@@ -36,6 +37,11 @@ json tensor_to_json(const Tensor<1, dim, Number> &tensor)
     for (unsigned int i = 0; i < dim; ++i)
         j.push_back(tensor[i]);
     return j;
+}
+
+template <typename Number = double>
+inline std::string format_float(const Number & val){
+    return fmt::format("{:.2e}", val);
 }
 
 } // namespace commet_solve

@@ -1,10 +1,33 @@
 BasedOnStyle: Microsoft
-IndentWidth: '4'
-TabWidth: '4'
+IndentWidth: 4
+TabWidth: 4
 UseTab: Always
 BinPackArguments: false
 BinPackParameters: false
 AlwaysBreakTemplateDeclarations: true
 BreakConstructorInitializersBeforeComma: true
-# AlwaysBreakAfterDefinitionReturnType: true
-# BreakBeforeBraces: BS_Attach
+
+# --- Add or modify these: ---
+BreakBeforeBraces: Allman
+BraceWrapping:
+  AfterEnum: true
+  AfterStruct: true
+  AfterClass: true
+  AfterControlStatement: true
+  BeforeElse: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# Force multi-line for initializer lists like std::map, vectors, etc.
+Cpp11BracedListStyle: true
+AllowAllConstructorInitializersOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBracedInitList: true
+BreakBeforeBinaryOperators: None
+AlignAfterOpenBracket: DontAlign
+
+
+AllowShortDeclarationsOnASingleLine: false

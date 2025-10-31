@@ -126,7 +126,7 @@ static Logger LOGGER;
 #ifdef SHOW_DEBUG_MESSAGES
   #define DEBUG_MSG(msg) commet_solve::LOGGER.debug( std::string(__FILENAME__) + std::string(":") + std::to_string(__LINE__) + std::string(" ") + msg);
 #else
-  #define DEBUG_MSG(msg) do {} while(0)
+  #define DEBUG_MSG(msg) do {} while(0);
 #endif
 
 

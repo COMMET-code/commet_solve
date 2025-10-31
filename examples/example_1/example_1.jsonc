@@ -14,7 +14,7 @@
         // Thickness of the plate
         "thickness": 0.1,
         // The number of times to refine the mesh of the geometry in-plane
-        "planar_refinements": 4,
+        "planar_refinements": 1,
         // The number of times to refine the mesh of the geometry globally (through the thickness and in-plane)
         "global_refinements": 1
     },
@@ -33,7 +33,7 @@
     "stages": [
         {
             "end_time": 1,
-            "time_increment_size": 0.1,
+            "time_increment_size": 0.05,
             "dirichlet_boundary_conditions": [
                  {
                      "type": "standard",
@@ -57,39 +57,16 @@
                      "type": "standard",
                      "boundary_id": 4,
                      "components": [0, 1, 2],
-                     "values": [1, 0, 0]
-                 }
-            ],
-            "neumann_boundary_conditions": [],
-            "robin_boundary_conditions": []
-        },
-        {
-            "end_time": 2,
-            "time_increment_size": 0.1,
-            "dirichlet_boundary_conditions": [
-                 {
-                     "type": "standard",
-                     "boundary_id": 1,
-                     "components": [0],
-                     "values": [0]
-                 },
-                 {
-                     "type": "standard",
-                     "boundary_id": 2,
-                     "components": [1],
-                     "values": [0]
-                 },
-                 {
-                     "type": "standard",
-                     "boundary_id": 3,
-                     "components": [2],
-                     "values": [0]
-                 },
-                 {
-                     "type": "standard",
-                     "boundary_id": 4,
-                     "components": [0, 1, 2],
-                     "values": [1, 0, 0]
+                     "values": [1, 0, 0],
+                     "time_function": {
+                         "type": "data",
+                         "data": [
+                             [0, 0],
+                             [0.2, 1],
+                             [0.6, -0.15],
+                             [1, 1]
+                         ]
+                     }
                  }
             ],
             "neumann_boundary_conditions": [],
