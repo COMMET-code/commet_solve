@@ -49,7 +49,6 @@ class Isihara : public IsoHyperelasticMaterial<dim, Number>
 		const SymmetricTensor<4, dim> &IxI = StandardTensors<dim>::IxI;
 		const SymmetricTensor<4, dim> &IoI = StandardTensors<dim>::S;
 
-		// kirchhoff_stress += 4 * dPhi_dI1 * (I1 * (IoI + IxI / 3) - IoA_AoI) / 3;
 		spatial_stiffness += 4 * dPhi_dI1 * (I1 * (IoI + IxI / 3) - IoA_AoI) / 3;
 		spatial_stiffness += 4 * d2Phi_dI1 * (outer_product(B_iso, B_iso) - IoA_AoI * I1 / 3. + I1 * I1 * IxI / 9.);
 
@@ -68,15 +67,20 @@ template <int dim, typename Number = double>
 class HGO : public IsoHyperelasticMaterial<dim, Number>
 {
   public:
-	HGO() = default;
+	// HGO() = default;
 	HGO(const Number & a,
         const Number & b,
         const array<Number, N_ORIENTATION_VECS>& as,
-        const array<Number, N_ORIENTATION_VECS>& bs)
+        const array<Number, N_ORIENTATION_VECS>& bs,
+        const array<Number, N_ORIENTATION_VECS>& a_cross,
+        const array<Number, N_ORIENTATION_VECS>& b_cross
+     )
     : a(a)  
     , b(b)  
     , as(as)  
     , bs(bs)  
+    , a_cross(a_cross)  
+    , b_cross(b_cross)  
     {};
 	HGO(HGO &&) = delete;
 	HGO(const HGO &) = delete;
@@ -131,6 +135,29 @@ class HGO : public IsoHyperelasticMaterial<dim, Number>
 					 I4 * (d2Psi_dI * I4 + dPsi_dI) * StandardTensors<dim>::IxI / 9. +
 					 I4 * dPsi_dI * StandardTensors<dim>::S / 3.);
 		}
+
+        // Assert(N_ORIENTATION_VECS==3, ExcInternalError());
+		for (unsigned int i = 0; i < N_ORIENTATION_VECS; i++){
+            const unsigned int j = (i+1)%N_ORIENTATION_VECS;
+			const Number &ai = a_cross[i];
+			const Number &bi = b_cross[i];
+
+			const Tensor<1, dim> a_i_iso = F_iso * orientation_vectors[i];
+			const Tensor<1, dim> a_j_iso = F_iso * orientation_vectors[j];
+
+			const Number I4 = a_i_iso*a_j_iso;
+			strain_energy += ai * (exp(bi * pow(I4, 2)) - 1) / (2 * bi);
+			const Number dPsi_dI = ai * exp(bi * pow(I4, 2)) * I4;
+			const Number d2Psi_dI = ai * exp(bi * pow(I4, 2)) * (1 + 2 * bi * pow(I4, 2));
+			const SymmetricTensor<2, dim, Number> A = symmetrize(outer_product(a_i_iso, a_j_iso));
+			kirchhoff_stress += 2 * dPsi_dI * (A - I4 * StandardTensors<dim>::I / 3);
+
+			spatial_stiffness +=
+				4 * (d2Psi_dI * outer_product(A, A) - (d2Psi_dI * I4 + dPsi_dI) * IoA_and_AoI<dim, Number>(A) / 3. +
+					 I4 * (d2Psi_dI * I4 + dPsi_dI) * StandardTensors<dim>::IxI / 9. +
+					 I4 * dPsi_dI * StandardTensors<dim>::S / 3.);
+        }
+
 	}
 
   private:
@@ -141,28 +168,9 @@ class HGO : public IsoHyperelasticMaterial<dim, Number>
 	const array<Number, N_ORIENTATION_VECS> bs;
 
 	// TODO come back to the cross terms
-	// const array<Number, N_ORIENTATION_VECS> a_cross;
-	// const array<Number, N_ORIENTATION_VECS> b_cross;
+	const array<Number, N_ORIENTATION_VECS> a_cross;
+	const array<Number, N_ORIENTATION_VECS> b_cross;
 
-	// const unsigned int n_active;
-	// const unsigned int n_cross_active;
-	//     //
-	//     //
-	//     //
-
-
-	//  Number a;
-	//  Number b;
-
-	//  array<Number, N_ORIENTATION_VECS> as;
-	//  array<Number, N_ORIENTATION_VECS> bs;
-
-	// // TODO come back to the cross terms
-	//  array<Number, N_ORIENTATION_VECS> a_cross;
-	//  array<Number, N_ORIENTATION_VECS> b_cross;
-
-	// const unsigned int n_active;
-	// const unsigned int n_cross_active;
 };
 
 } // namespace commet_solve

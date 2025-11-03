@@ -91,10 +91,18 @@ v_type  compulsory_vector(const string &key, const json &data)
 }
 
 template <unsigned int array_size, typename Number>
-array<Number, array_size> compulsory_array_zero_padded(const string &key, const json &data)
+array<Number, array_size> padded_array(const string &key,
+                                       const json &data,
+                                       const bool &compulsory=true,
+                                       const Number & pad_value=0.0)
 {
-	vector<Number> vals = compulsory_value<vector<Number>>(key, data);
-    array<Number, array_size> out = {{0.0}};
+	vector<Number> vals;
+    if(compulsory)
+        vals = compulsory_value<vector<Number>>(key, data);
+    else
+        vals = value_or_default<vector<Number>>(key, data, {});
+
+    array<Number, array_size> out = {{pad_value}};
 
 	if (vals.size() <= array_size)
 	{

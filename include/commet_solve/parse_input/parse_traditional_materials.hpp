@@ -99,8 +99,10 @@ std::unique_ptr<IsoHyperelasticMaterial<dim, Number>> parse_iso_material(const j
 	case iso_materials::hgo: {
 		return make_unique<HGO<dim, Number>>(compulsory_value<double>("a", material_spec), 
                                        compulsory_value<double>("b", material_spec), 
-                                       compulsory_array_zero_padded<N_ORIENTATION_VECS, double>("as", material_spec),
-                                       compulsory_array_zero_padded<N_ORIENTATION_VECS, double>("bs", material_spec)
+                                       padded_array<N_ORIENTATION_VECS, double>("as", material_spec, /*compulsory=*/true, /*pad_value=*/0.0),
+                                       padded_array<N_ORIENTATION_VECS, double>("bs", material_spec, /*compulsory=*/true, /*pad_value=*/1.0),
+                                       padded_array<N_ORIENTATION_VECS, double>("a_cross", material_spec, /*compulsory=*/false, /*pad_value=*/0.0),
+                                       padded_array<N_ORIENTATION_VECS, double>("b_cross", material_spec, /*compulsory=*/false, /*pad_value=*/1.0)
                                        );
 	}
 	}

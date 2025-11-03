@@ -778,7 +778,6 @@ void FiniteStrainSolver<dim, Number>::output() {
     std::ofstream pvd_output(pvd_name);
     DataOutBase::write_pvd_record(pvd_output, times_and_names);
   }
-
 }
 
 template <int dim, typename Number>
