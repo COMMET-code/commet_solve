@@ -1,0 +1,111 @@
+{
+    "mesh": {
+        "from": "built-in",
+        "type": "plate_with_hole",
+        "order": 1,
+        "radius": 0.2,
+        "thickness": 0.1,
+        "length": 1,
+        "planar_refinements": 2,
+        "global_refinements": 2
+    },
+    "materials": [
+        {
+            "id": 0,
+            "type": "traditional",
+            "orientation_vectors": ["fibre", "sheet", "normal"],
+            "elasticity" : { 
+                "type": "iso_vol",
+                "iso":{ 
+                    "type": "hgo",
+                    "a": 10,
+                    "b": 1,
+                    "as": [10, 2, 8],
+                    "bs": [1, 0.2, 0.3],
+                    "a_cross": [10, 2, 8],
+                    "b_cross": [1, 0.2, 0.3]
+                },
+                "vol":{ 
+                    "type": "square_and_log",
+                    "k": 100
+                }
+            }
+        }
+    ],
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.1,
+            "dirichlet_boundary_conditions": [
+                {
+                    "type": "standard",
+                    "boundary_id": 1,
+                    "components": [
+                        0, 1, 2
+                    ],
+                    "values": [
+                        -1, 0, 0
+                    ]
+                },
+                {
+                    "type": "standard",
+                    "boundary_id": 4,
+                    "components": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "values": [
+                        1,
+                        0,
+                        0
+                    ]
+                }
+            ],
+            "neumann_boundary_conditions": [],
+            "robin_boundary_conditions": []
+        }
+    ],
+    "fields": {
+        "scalar": [],
+        "vector": [
+            {
+                "name": "fibre",
+                "type": "analytical",
+                "x_func": "1",
+                "y_func": "0",
+                "z_func": "0"
+            },
+            {
+                "name": "sheet",
+                "type": "analytical",
+                "x_func": "0",
+                "y_func": "1",
+                "z_func": "0"
+            },
+            {
+                "name": "normal",
+                "type": "analytical",
+                "x_func": "0",
+                "y_func": "0",
+                "z_func": "1"
+            }
+        ],
+        "tensor": []
+    },
+    "outputs": {
+        "scalar_outputs": [
+            "strain_energy"
+        ],
+        "vector_outputs": ["current_fibre_0"],
+        "tensor_outputs": [
+            "kirchhoff_stress",
+            "C"
+        ]
+    },
+    "miscellaneous": {
+        "output_vtus": true,
+        "nr_threshold": 1e-6,
+        "max_nr_iterations": 5
+    }
+}
