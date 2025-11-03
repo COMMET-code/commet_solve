@@ -11,8 +11,11 @@ template <int dim, typename Number = double>
 class BatchVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 {
   public:
-	BatchVectorizedDomain(const unsigned int &batch_size)
-		: batch_size(batch_size) {};
+	BatchVectorizedDomain(const unsigned int &batch_size,
+                       const unsigned int & n_structural_vectors=0)
+		:VectorizedMaterialDomain<dim, Number>(n_structural_vectors)
+        , batch_size(batch_size) {};
+
 	BatchVectorizedDomain(BatchVectorizedDomain &&) = delete;
 	BatchVectorizedDomain(const BatchVectorizedDomain &) = delete;
 	BatchVectorizedDomain &operator=(BatchVectorizedDomain &&) = delete;
@@ -35,6 +38,14 @@ class BatchVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 			for (unsigned int i = 0; i < this->batch_size; i++)
 			{
 				deal_to_torch_tensor<dim, Number>(i, it_read->second.F, F, TensorLayout::STANDARD);
+
+            if(this->n_structural_vectors> 0)
+                mat_point_structural_vector_to_torch_tensor<dim, Number>(
+                    i,
+                    it_read->second.orientation_vectors,
+                    this->n_structural_vectors,
+                    structural_vectors);
+
 				it_read++;
 				if (it_read == this->qp_data.end())
 					break;

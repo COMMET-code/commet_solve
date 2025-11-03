@@ -2,6 +2,7 @@
 #define INCLUDE_MATERIAL_DOMAIN_MATERIAL_POINTS_HPP_
 
 
+#include "commet_solve/config.hpp"
 #include <deal.II/base/symmetric_tensor.h>
 #include <deal.II/physics/elasticity/kinematics.h>
 #include <deal.II/physics/elasticity/standard_tensors.h>

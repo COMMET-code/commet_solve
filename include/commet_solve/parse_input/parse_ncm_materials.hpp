@@ -22,15 +22,15 @@ using json = nlohmann::json;
 using namespace std;
 using namespace dealii;
 
-enum class materials
+enum class vectorization
 {
-	globally_vectorized_ncm,
-	batch_vectorized_ncm,
+	global,
+	batched,
 };
 
-static const map<string, materials> //
-	MATERIALS({{"globally_vectorized_ncm", materials::globally_vectorized_ncm},
-			   {"batch_vectorized_ncm", materials::batch_vectorized_ncm}});
+static const map<string, vectorization> //
+	VECTORIZATION({{"global", vectorization::global},
+			   {"batched", vectorization::batched}});
 
 static const map<string, NCMEvaluationMethod> //
 	NCM_EVALUATION({{"optimized", NCMEvaluationMethod::OPT_F},
@@ -43,9 +43,9 @@ void parse_ncm_material(const json &material_spec, FiniteStrainSolver<dim, Numbe
 	vector<string> orientation_vector_names =
 		value_or_default<vector<string>>("orientation_vectors", material_spec, {});
 
-	switch (json_key_to_map_value("type", material_spec, MATERIALS))
+	switch (json_key_to_map_value("vectorization", material_spec, VECTORIZATION))
 	{
-	case materials::batch_vectorized_ncm: {
+	case vectorization::batched: {
 		const unsigned int batch_size = compulsory_value<unsigned int>("batch_size", material_spec);
 		auto domain = std::make_unique<commet_solve::BatchVectorizedDomain<dim, Number>>(batch_size);
 		domain->set_evaluation_method(json_key_to_map_value("evaluation_method", material_spec, NCM_EVALUATION));
@@ -55,7 +55,7 @@ void parse_ncm_material(const json &material_spec, FiniteStrainSolver<dim, Numbe
 
 		return;
 	}
-	case materials::globally_vectorized_ncm: {
+	case vectorization::global: {
 
 		auto domain = std::make_unique<GloballyVectorizedDomain<dim, Number>>();
 		domain->set_evaluation_method(json_key_to_map_value("evaluation_method", material_spec, NCM_EVALUATION));

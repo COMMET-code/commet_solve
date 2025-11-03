@@ -1,6 +1,7 @@
 #ifndef INCLUDE_NCM_DOMAIN_GLOBALLY_VECTORIZED_DOMAIN_HPP_
 #define INCLUDE_NCM_DOMAIN_GLOBALLY_VECTORIZED_DOMAIN_HPP_
 
+#include "commet_solve/material_domain/material_points.hpp"
 #include "tensor_conversion_utils.hpp"
 #include "vectorized_domain.hpp"
 
@@ -11,7 +12,8 @@ template <int dim, typename Number = double>
 class GloballyVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 {
   public:
-	GloballyVectorizedDomain() = default;
+	GloballyVectorizedDomain(const unsigned int & n_structural_vectors=0)
+		: VectorizedMaterialDomain<dim, Number>(n_structural_vectors){};
 	GloballyVectorizedDomain(GloballyVectorizedDomain &&) = delete;
 	GloballyVectorizedDomain(const GloballyVectorizedDomain &) = delete;
 	GloballyVectorizedDomain &operator=(GloballyVectorizedDomain &&) = delete;
@@ -27,6 +29,12 @@ class GloballyVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 		for (auto &[point_key, point_data] : this->qp_data)
 		{
 			deal_to_torch_tensor<dim, Number>(count, point_data.F, F, TensorLayout::STANDARD);
+            if(this->n_structural_vectors> 0)
+                mat_point_structural_vector_to_torch_tensor<dim, Number>(
+                    count,
+                    point_data.orientation_vectors,
+                    this->n_structural_vectors,
+                    structural_vectors);
 
 			count++;
 		}
@@ -55,7 +63,7 @@ class GloballyVectorizedDomain : public VectorizedMaterialDomain<dim, Number>
 		const at::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
         const int64_t size = static_cast<int64_t>(this->qp_data.size());
 		F = torch::zeros({size, dim, dim}, options);
-		structural_vectors = torch::zeros({size, 0, dim}, options);
+		structural_vectors = torch::zeros({size, this->n_structural_vectors, dim}, options);
 
 		energy = torch::zeros({size}, options);
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(commet_solve VERSION 0.0.1 LANGUAGES CXX)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # # Output directories
@@ -23,7 +23,7 @@ find_package(fmt REQUIRED)
 
 # set(DEAL_II_STATIC_EXECUTABLE OFF CACHE INTERNAL "")
 
-find_package(deal.II 9.6.0
+find_package(deal.II 9.7.0
   HINTS ${deal.II_DIR} ${DEAL_II_DIR} ../ ../../ $ENV{DEAL_II_DIR}
   )
 if(NOT ${deal.II_FOUND})
