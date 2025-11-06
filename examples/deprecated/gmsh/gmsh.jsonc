@@ -18,19 +18,13 @@
     "materials": [
         {
             "id": 0,
-            "type": "neohookean",
-            "lambda": 4000,
-            "mu":6900
+            "type": "traditional",
+            "elasticity": {
+                "type": "neohookean",
+                "mu": 77,
+                "lambda": 115
+            }
         }
-        // {
-        //     "id": 0,
-        //     "type": "batch_vectorized_ncm",
-        //     "evaluation_method": "optimized",
-        //     "batch_size": 512,
-        //     // "evaluation_method": "using_C",
-        //     // "path_to_torchscript": "../resources/torchscripts/opt/opt-neohookean-micnn-cpu.torchscript"
-        //     "path_to_torchscript": "opt-neohookean-micnn-cpu.torchscript"
-        // }
     ],
     "stages": [
         {

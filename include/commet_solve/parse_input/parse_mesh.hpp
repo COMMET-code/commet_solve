@@ -113,8 +113,9 @@ void parse_mesh(const json &mesh_inp, tri_type &tri,
 
     if (extension == "msh") {
       GridIn<dim, dim> grid_in(tri);
-      std::ifstream in_stream(pth_to_mesh);
-      grid_in.read_msh(in_stream);
+      // std::ifstream in_stream(pth_to_mesh);
+      grid_in.read_msh(pth_to_mesh);
+
     } else if (extension.substr(0, 4) == "json")
       triangulation_from_json(tri, pth_to_mesh, b_id_map);
     else
