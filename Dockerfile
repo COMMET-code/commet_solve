@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openmpi-bin openmpi-common libopenmpi-dev \ 
     libblas3 libblas-dev liblapack3 liblapack-dev libsuitesparse-dev \ 
     gcc-10 g++-10 gfortran-10 \
-    ca-certificates zip unzip gmsh
+    ca-certificates zip unzip gmsh libgmsh-dev
 
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20
 RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20
