@@ -1,11 +1,9 @@
 #ifndef INCLUDE_PARSE_INPUT_PARSE_NCM_MATERIALS_HPP_
 #define INCLUDE_PARSE_INPUT_PARSE_NCM_MATERIALS_HPP_
 
-#include "../mesh/mesh.hpp"
-#include "commet_solve/material_domain/isotropic_hyperelastic_domain.hpp"
-#include "commet_solve/material_domain/material_domain.hpp"
-#include "commet_solve/material_domain/ncm_domain/batch_vectorized_domain.hpp"
-#include "commet_solve/material_domain/ncm_domain/globally_vectorized_domain.hpp"
+// #include "../mesh/mesh.hpp"
+// #include "commet_solve/material_domain/isotropic_hyperelastic_domain.hpp"
+// #include "commet_solve/material_domain/material_domain.hpp"
 #include "commet_solve/solver.hpp"
 #include "parse_utils.hpp"
 #include <csignal>
@@ -14,6 +12,8 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
+#include "commet_solve/material_domain/ncm_domain/batch_vectorized_domain.hpp"
+#include "commet_solve/material_domain/ncm_domain/globally_vectorized_domain.hpp"
 
 namespace commet_solve::parse
 {

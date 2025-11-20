@@ -3,6 +3,8 @@
 
 #include "../material_domain.hpp"
 #include "commet_solve/material_domain/material_points.hpp"
+#include <deal.II/base/symmetric_tensor.h>
+#include <deal.II/base/tensor.h>
 
 #include <stdexcept>
 #include <string>
@@ -119,10 +121,10 @@ public:
     cc = point.cc;
   };
 
-  void compute_constitutive_behaviour() override {
+  //   virtual void compute_constitutive_behaviour() override {
 
-    throw std::logic_error("Not implemented yet...");
-  };
+  //   throw std::logic_error("Not implemented yet...");
+  // };
 
   void evaluate_model(const torch::Tensor &F,
                       const torch::Tensor &structural_tensors,

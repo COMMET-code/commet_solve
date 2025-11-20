@@ -22,3 +22,6 @@ field_data/
 **/commet_solver.log
 **/problem_size.json
 hpc/
+examples/benchmark_examples/torchscripts/
+examples/benchmark_examples/global/input/
+examples/benchmark_examples/global/output/

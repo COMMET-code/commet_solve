@@ -23,7 +23,7 @@ find_package(fmt REQUIRED)
 
 # set(DEAL_II_STATIC_EXECUTABLE OFF CACHE INTERNAL "")
 
-find_package(deal.II 9.7.0
+find_package(deal.II 9.6.0
   HINTS ${deal.II_DIR} ${DEAL_II_DIR} ../ ../../ $ENV{DEAL_II_DIR}
   )
 if(NOT ${deal.II_FOUND})
@@ -54,6 +54,7 @@ include_directories(${PROJECT_SOURCE_DIR}/external/exprtk)
 
 # Add src directory
 add_subdirectory(src)
+add_subdirectory(benchmark)
 
 # ========================
 # CPack Configuration
