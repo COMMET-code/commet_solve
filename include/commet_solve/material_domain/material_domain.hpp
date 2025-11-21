@@ -8,6 +8,8 @@
 #include <deal.II/base/symmetric_tensor.h>
 #include <deal.II/base/tensor.h>
 #include <deal.II/base/types.h>
+#include <ranges>
+#include <span>
 
 #include "../types.hpp"
 #include "../utilities.hpp"
@@ -93,6 +95,12 @@ class MaterialDomain
 						  Number &psi,
 						  SymmetricTensor<2, dim, Number> &tau,
 						  SymmetricTensor<4, dim, Number> &cc) = 0;
+
+	virtual std::span<const Tensor<1, dim, Number>> 
+    get_structural_vectors(const dealii::types::global_cell_index &cell, const unsigned int &qp) {
+	        return {};
+    };
+
 
 	virtual Number get_scalar_value(const dealii::types::global_cell_index & /*cell*/,
 									const unsigned int & /*qp*/,
