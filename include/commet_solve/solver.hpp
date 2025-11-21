@@ -984,6 +984,10 @@ void FiniteStrainSolver<dim, Number>::write_fe_data() {
     json arr = json::array();
 
     for (const CellData<dim, Number> &c : this->fe_data.get_cell_data()) {
+
+      std::unique_ptr<MaterialDomain<dim, Number>> &mat_domain =
+          this->material_domains.at(c.material_id);
+      // mat_domain->get
       auto j = json{{"id", c.id},
                     {"fe_index", c.fe_index},
                     {"material_id", c.material_id},
@@ -992,7 +996,8 @@ void FiniteStrainSolver<dim, Number>::write_fe_data() {
                     {"global_dofs", c.global_dofs},
                     {"jxw", c.jxw},
                     {"N", c.N},
-                    {"B", json::array()}};
+                    {"B", json::array()},
+                    {"structural_vectors", json::array()}};
 
       for (const auto &qp_B : c.B) {
         json qp_B_json = json::array();
@@ -1000,6 +1005,15 @@ void FiniteStrainSolver<dim, Number>::write_fe_data() {
           qp_B_json.push_back(tensor_to_json<dim, Number>(
               node_B)); // relies on Tensor<1,dim,Number> -> json overload
         j["B"].push_back(qp_B_json);
+      }
+      for (unsigned int qp = 0; qp < c.n_qps; qp++) {
+        json qp_structural_vectors_json = json::array();
+        for (const auto &qp_structural_vector :
+             mat_domain->get_structural_vectors(c.id, qp))
+          qp_structural_vectors_json.push_back(
+              tensor_to_json<dim, Number>(qp_structural_vector));
+
+        j["structural_vectors"].push_back(qp_structural_vectors_json);
       }
 
       arr.push_back(j);

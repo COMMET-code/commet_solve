@@ -6,8 +6,8 @@
         "radius": 0.2,
         "thickness": 0.1,
         "length": 1,
-        "planar_refinements": 2,
-        "global_refinements": 2
+        "planar_refinements": 0,
+        "global_refinements": 0
     },
     "materials": [
         {
@@ -106,6 +106,7 @@
     "miscellaneous": {
         "output_vtus": true,
         "nr_threshold": 1e-6,
-        "max_nr_iterations": 5
+        "max_nr_iterations": 5,
+        "write_mesh_data": true
     }
 }
