@@ -47,6 +47,8 @@ html_static_path = ['_static']
 html_css_files = [
         'custom.css'
         ]
+# html_baseurl = "https://USERNAME.github.io/REPO/"
+html_baseurl = "https://commet-code.github.io/commet_solve/"
 
 # -- Ben additions to configuration -------------------------------------------------
 # autoclass_content = 'both'
