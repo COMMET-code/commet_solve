@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Example 1: running a simulation without an NCM &mdash; COMMET solve 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=52f73200" />
+
+  
+    <link rel="shortcut icon" href="../../_static/logo-icon.svg"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Manual" href="../../manual/manual.html" />
+    <link rel="prev" title="Examples" href="../examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            COMMET solve
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Example 1: running a simulation without an NCM</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-files">Example files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#problem-definition">Problem definition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-input-file">The input file</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mesh-definition">Mesh definition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#material-definition">Material definition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stage-definition">Stage definition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#output-definition">Output definition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#running-the-simulation">Running the simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results">Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../manual/manual.html">Manual</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">COMMET solve</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Example 1: running a simulation without an NCM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/example_1/example_1.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="example-1-running-a-simulation-without-an-ncm">
+<h1>Example 1: running a simulation without an NCM<a class="headerlink" href="#example-1-running-a-simulation-without-an-ncm" title="Link to this heading"></a></h1>
+<p>This first example is designed to give users a simple first exposure to the input file interface – it can be thought of as a ‘’hello world’’ equivalent.
+The learning outcomes are as follows:</p>
+<ul class="simple">
+<li><p>First exposure to the COMMET input file schema</p></li>
+<li><p>Using built-in meshes</p></li>
+<li><p>Defining traditional (not NCM) hyperelastic material models</p></li>
+<li><p>Defining Dirichlet boundary conditions</p></li>
+<li><p>Choosing field outputs</p></li>
+</ul>
+<section id="example-files">
+<h2>Example files<a class="headerlink" href="#example-files" title="Link to this heading"></a></h2>
+<p>The files for running the example can be downloaded as a single zip file <a class="reference external" href="../../_static/example_1.zip">here</a>
+and it contains the following files:</p>
+<div class="line-block">
+<div class="line">.</div>
+<div class="line">├── no-ncm.jsonc</div>
+<div class="line">└── visualize.psvm</div>
+</div>
+</section>
+<section id="problem-definition">
+<h2>Problem definition<a class="headerlink" href="#problem-definition" title="Link to this heading"></a></h2>
+<p>We simulate a square plate with a hole in its centre and utilize quarter-symmetry.
+The problem is displayed schematically in the figure below.</p>
+<a class="reference internal image-reference" href="../../_images/geom.png"><img alt="../../_images/geom.png" src="../../_images/geom.png" style="width: 300px;" />
+</a>
+<p>The plate consists of a Neohookean material with the following strain energy density function</p>
+<div class="math">
+<p><img src="../../_images/math/d4ffd6748f21f34f2cc68832fa1454c8589d507b.png" alt="\Psi(\mathbf{C}) = \frac{\mu}{2}\left[I_1 - 3 - \log(I_3)\right] + \frac{\lambda}{4}\left[I_3 -1 -\log(I_3)\right] \,."/></p>
+</div><p>Here, <img class="math" src="../../_images/math/4a3598141469c2555591e66606a1b86d4ec6dca9.png" alt="\mu"/> and <img class="math" src="../../_images/math/cefc603e5658facb747581f9567192993f21c7ab.png" alt="\lambda"/> are material parameters, and <img class="math" src="../../_images/math/6ed97c57ec1fe46e16ecbf225895a77b6386ad4e.png" alt="I_1=\text{tr}(\mathbf{C})"/> and <img class="math" src="../../_images/math/8b4e19e7eab584ac0cc6eefc06fa48db3d4d907e.png" alt="I_3=\text{det}(\mathbf{C})"/>.</p>
+</section>
+<section id="the-input-file">
+<h2>The input file<a class="headerlink" href="#the-input-file" title="Link to this heading"></a></h2>
+<p>The input files for COMMET are discussed in detail in <a class="reference internal" href="../../manual/input_files.html#input-files"><span class="std std-ref">Input files</span></a>, however we repeat some of the keypoints here.
+COMMET uses JSON (or JSON with comments) for input files – the file extension “*.json” denotes a standard JSON file whereas “*.jsonc” denotes JSON with comments.
+In each input file, there are several sections that may be defined.
+The sections that will be defined in this example are <cite>mesh</cite>, <cite>materials</cite>, <cite>stages</cite>, and <cite>outputs</cite>.</p>
+<p>The input file to define the problem is shown below.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Content of no-ncm.jsonc</span><a class="headerlink" href="#id1" title="Link to this code"></a></div>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="p">{</span>
+<span class="w">     </span><span class="nt">&quot;mesh&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;built-in&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quarter_plate_with_hole&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;order&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;radius&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;length&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;thickness&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;planar_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;global_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">     </span><span class="p">},</span>
+<span class="w">     </span><span class="nt">&quot;materials&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">         </span><span class="p">{</span>
+<span class="w">             </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">             </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traditional&quot;</span><span class="p">,</span>
+<span class="w">             </span><span class="nt">&quot;elasticity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                 </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neohookean&quot;</span><span class="p">,</span>
+<span class="w">                 </span><span class="nt">&quot;mu&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">77</span><span class="p">,</span>
+<span class="w">                 </span><span class="nt">&quot;lambda&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">115</span>
+<span class="w">             </span><span class="p">}</span>
+<span class="w">         </span><span class="p">}</span>
+<span class="w">     </span><span class="p">],</span>
+<span class="w">     </span><span class="nt">&quot;stages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">         </span><span class="p">{</span>
+<span class="w">             </span><span class="nt">&quot;end_time&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">             </span><span class="nt">&quot;time_increment_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="w">             </span><span class="nt">&quot;dirichlet_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                 </span><span class="p">{</span>
+<span class="w">                     </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="w">                     </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">                     </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                         </span><span class="mi">0</span>
+<span class="w">                     </span><span class="p">],</span>
+<span class="w">                     </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                         </span><span class="mi">0</span>
+<span class="w">                     </span><span class="p">]</span>
+<span class="w">                 </span><span class="p">},</span>
+<span class="w">                 </span><span class="p">{</span>
+<span class="w">                     </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="w">                     </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="w">                     </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                         </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">                         </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">                         </span><span class="mi">2</span>
+<span class="w">                     </span><span class="p">],</span>
+<span class="w">                     </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                         </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">                         </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">                         </span><span class="mi">0</span>
+<span class="w">                     </span><span class="p">]</span>
+<span class="w">                 </span><span class="p">}</span>
+<span class="w">             </span><span class="p">],</span>
+<span class="w">             </span><span class="nt">&quot;neumann_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">             </span><span class="nt">&quot;robin_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">         </span><span class="p">}</span>
+<span class="w">     </span><span class="p">],</span>
+<span class="w">     </span><span class="nt">&quot;outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;scalar_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;I1&quot;</span><span class="p">],</span>
+<span class="w">          </span><span class="nt">&quot;vector_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span>
+<span class="w">          </span><span class="nt">&quot;tensor_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;kirchhoff_stress&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;C&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">     </span><span class="nt">&quot;miscellaneous&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;output_vtus&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;nr_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1e-6</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;max_nr_iterations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">     </span><span class="p">}</span>
+<span class="w"> </span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>We’ll break each section down in what follows.</p>
+<section id="mesh-definition">
+<h3>Mesh definition<a class="headerlink" href="#mesh-definition" title="Link to this heading"></a></h3>
+<p>The mesh for the problem is defined in the following block.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="nt">&quot;mesh&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;order&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;built-in&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quarter_plate_with_hole&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;radius&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;length&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;thickness&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;planar_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;global_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>For each COMMET simulation, the <code class="docutils literal notranslate"><span class="pre">mesh</span></code> section must be defined (some sections in the input file are optional, but the mesh section is not).
+The block has the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">order</span></code> (optional, default is 1) the order of the finite element to use.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span></code> (required) may either be set to <code class="docutils literal notranslate"><span class="pre">&quot;read&quot;</span></code>  to be read from a file or <code class="docutils literal notranslate"><span class="pre">&quot;built-in&quot;</span></code> to use one of the built-in meshes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> (required if <code class="docutils literal notranslate"><span class="pre">&quot;from&quot;=&quot;built-in&quot;</span></code>) If <code class="docutils literal notranslate"><span class="pre">from</span></code> is set to <code class="docutils literal notranslate"><span class="pre">&quot;built-in&quot;</span></code> then you must specify which built-in mesh to use here. See <a class="reference internal" href="../../manual/mesh/builtin.html#built-in-meshes"><span class="std std-ref">Built-in meshes</span></a> for options.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">radius</span></code> (optional) Radius of the hole in the plate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">length</span></code> (optional) Length of the plate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">thickness</span></code> (optional) Thickness of the plate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">planar_refinements</span></code> (optional) The number of times to refine the mesh of the geometry in-plane</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">global_refines</span></code> (optional) The number of times to refine the mesh of the geometry globally (through the thickness and in-plane)</p></li>
+</ul>
+</section>
+<section id="material-definition">
+<h3>Material definition<a class="headerlink" href="#material-definition" title="Link to this heading"></a></h3>
+<p>The materials used in the problem are defined in the following block.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="nt">&quot;materials&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">     </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traditional&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;elasticity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neohookean&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;mu&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">77</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;lambda&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">115</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">     </span><span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>A mesh may contain multiple materials.
+As such, the materials used in the problem are defined in a list.
+For this problem, however, there is only one material and so the list only has one entry</p>
+</section>
+<section id="stage-definition">
+<h3>Stage definition<a class="headerlink" href="#stage-definition" title="Link to this heading"></a></h3>
+</section>
+<section id="output-definition">
+<h3>Output definition<a class="headerlink" href="#output-definition" title="Link to this heading"></a></h3>
+</section>
+</section>
+<section id="running-the-simulation">
+<h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Link to this heading"></a></h2>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Running the simulation</span><a class="headerlink" href="#id2" title="Link to this code"></a></div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="nv">$NP</span><span class="w"> </span>commet_solve<span class="w"> </span>no-ncm.jsonc
+</pre></div>
+</div>
+</div>
+</section>
+<section id="results">
+<h2>Results<a class="headerlink" href="#results" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../manual/manual.html" class="btn btn-neutral float-right" title="Manual" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Benjamin Alheit &amp; Mathias Peirlinck &amp; Sid Kumar .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

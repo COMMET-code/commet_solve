@@ -1,0 +1,11 @@
+.admonition.note > .admonition-title::before {
+    content: "🌱";
+}
+
+.admonition.warning > .admonition-title::before {
+    content: "⚠️";
+}
+
+.admonition.tip > .admonition-title::before {
+    content: "🌱";
+}

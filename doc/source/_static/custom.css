@@ -1,0 +1,5 @@
+/* Generic admonition (no type) */
+.admonition > .admonition-title::before {
+    content: "{...} "; 
+    font-weight: bold;
+}
