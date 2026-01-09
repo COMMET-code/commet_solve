@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hello world: running a simulation without an NCM &mdash; COMMET solve 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=52f73200" />
+
+  
+    <link rel="shortcut icon" href="../../_static/logo-icon.svg"/>
+    <link rel="canonical" href="https://commet-code.github.io/commet_solve/examples/hello_world/hello_world.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Defining material models using Pytorch" href="../using_torchscript/using_torchscript.html" />
+    <link rel="prev" title="Examples" href="../examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            COMMET solve
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Hello world: running a simulation without an NCM</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-files">Example files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#problem-definition">Problem definition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-input-file">The input file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-the-simulation">Running the simulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../using_torchscript/using_torchscript.html">Defining material models using Pytorch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../a_first_ncm/a_first_ncm.html">A first NCM</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">COMMET solve</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Hello world: running a simulation without an NCM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/hello_world/hello_world.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="hello-world-running-a-simulation-without-an-ncm">
+<span id="helloworld"></span><h1>Hello world: running a simulation without an NCM<a class="headerlink" href="#hello-world-running-a-simulation-without-an-ncm" title="Link to this heading"></a></h1>
+<p>This first example is designed to give users a simple first exposure to the input file interface – it can be thought of as a ‘’hello world’’ equivalent.
+The learning outcomes are as follows:</p>
+<ul class="simple">
+<li><p>First exposure to the COMMET input file schema</p></li>
+<li><p>Using built-in meshes</p></li>
+<li><p>Defining traditional (not NCM) hyperelastic material models</p></li>
+<li><p>Defining Dirichlet boundary conditions</p></li>
+<li><p>Choosing field outputs</p></li>
+</ul>
+<section id="example-files">
+<h2>Example files<a class="headerlink" href="#example-files" title="Link to this heading"></a></h2>
+<p>The files for running the example can be downloaded as a single zip file <a class="reference external" href="../../_static/hello_world.zip">here</a>
+and it contains the following files:</p>
+<div class="line-block">
+<div class="line">.</div>
+<div class="line">└── hello_world.jsonc</div>
+</div>
+</section>
+<section id="problem-definition">
+<h2>Problem definition<a class="headerlink" href="#problem-definition" title="Link to this heading"></a></h2>
+<p>We simulate a square plate with a hole in its centre and utilize quarter-symmetry.
+The problem is displayed schematically in the figure below.</p>
+<a class="reference internal image-reference" href="../../_images/geom.png"><img alt="../../_images/geom.png" src="../../_images/geom.png" style="width: 300px;" />
+</a>
+<p>The plate consists of a Neohookean material with the following strain energy density function</p>
+<div class="math">
+<p><img src="../../_images/math/d4ffd6748f21f34f2cc68832fa1454c8589d507b.png" alt="\Psi(\mathbf{C}) = \frac{\mu}{2}\left[I_1 - 3 - \log(I_3)\right] + \frac{\lambda}{4}\left[I_3 -1 -\log(I_3)\right] \,."/></p>
+</div><p>Here, <img class="math" src="../../_images/math/4a3598141469c2555591e66606a1b86d4ec6dca9.png" alt="\mu"/> and <img class="math" src="../../_images/math/cefc603e5658facb747581f9567192993f21c7ab.png" alt="\lambda"/> are material parameters, and <img class="math" src="../../_images/math/6ed97c57ec1fe46e16ecbf225895a77b6386ad4e.png" alt="I_1=\text{tr}(\mathbf{C})"/> and <img class="math" src="../../_images/math/8b4e19e7eab584ac0cc6eefc06fa48db3d4d907e.png" alt="I_3=\text{det}(\mathbf{C})"/>.</p>
+</section>
+<section id="the-input-file">
+<h2>The input file<a class="headerlink" href="#the-input-file" title="Link to this heading"></a></h2>
+<p>COMMET uses JSON (or JSON with comments) for input files – the file extension “*.json” denotes a standard JSON file whereas “*.jsonc” denotes JSON with comments.
+In each input file, there are several sections that may be defined.
+The sections that are defined in this example are <cite>mesh</cite>, <cite>materials</cite>, <cite>stages</cite>, and <cite>outputs</cite>.</p>
+<p>The input file to define the problem is shown below with explanatory comments.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Content of hello_world.jsonc</span><a class="headerlink" href="#id1" title="Link to this code"></a></div>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos"> 2</span><span class="w"> </span><span class="c1">// Defining the mesh</span>
+<span class="linenos"> 3</span><span class="w"> </span><span class="nt">&quot;mesh&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos"> 4</span><span class="w">     </span><span class="c1">// Indicating that we will use a built-in mesh (not reading one in from file)</span>
+<span class="linenos"> 5</span><span class="w">     </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;built-in&quot;</span><span class="p">,</span>
+<span class="linenos"> 6</span><span class="w">     </span><span class="c1">// The type of built-in mesh that we will use</span>
+<span class="linenos"> 7</span><span class="w">     </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quarter_plate_with_hole&quot;</span><span class="p">,</span>
+<span class="linenos"> 8</span><span class="w">     </span><span class="c1">// The order of the finite elements to use</span>
+<span class="linenos"> 9</span><span class="w">     </span><span class="nt">&quot;order&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">10</span><span class="w">     </span><span class="c1">// Radius of the hole in the plate</span>
+<span class="linenos">11</span><span class="w">     </span><span class="nt">&quot;radius&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span>
+<span class="linenos">12</span><span class="w">     </span><span class="c1">// Length of the plate</span>
+<span class="linenos">13</span><span class="w">     </span><span class="nt">&quot;length&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">14</span><span class="w">     </span><span class="c1">// Thickness of the plate</span>
+<span class="linenos">15</span><span class="w">     </span><span class="nt">&quot;thickness&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="linenos">16</span><span class="w">     </span><span class="c1">// The number of times to refine the mesh of the geometry in-plane</span>
+<span class="linenos">17</span><span class="w">     </span><span class="nt">&quot;planar_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">18</span><span class="w">     </span><span class="c1">// The number of times to refine the mesh of the geometry globally (through the thickness and in-plane)</span>
+<span class="linenos">19</span><span class="w">     </span><span class="nt">&quot;global_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="linenos">20</span><span class="w"> </span><span class="p">},</span>
+<span class="linenos">21</span><span class="w"> </span><span class="c1">// Defining the materials</span>
+<span class="linenos">22</span><span class="w"> </span><span class="nt">&quot;materials&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="linenos">23</span><span class="w">     </span><span class="p">{</span>
+<span class="linenos">24</span><span class="w">         </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="c1">// The id of the region for which this material applies</span>
+<span class="linenos">25</span><span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traditional&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Either &quot;traditional&quot; or &quot;ncm&quot;</span>
+<span class="linenos">26</span><span class="w">         </span><span class="nt">&quot;elasticity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// Defines the elastic portion of the behaviour</span>
+<span class="linenos">27</span><span class="w">             </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neohookean&quot;</span><span class="p">,</span>
+<span class="linenos">28</span><span class="w">             </span><span class="nt">&quot;mu&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">77</span><span class="p">,</span>
+<span class="linenos">29</span><span class="w">             </span><span class="nt">&quot;lambda&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">115</span>
+<span class="linenos">30</span><span class="w">         </span><span class="p">}</span>
+<span class="linenos">31</span><span class="w">     </span><span class="p">}</span>
+<span class="linenos">32</span><span class="w"> </span><span class="p">],</span>
+<span class="linenos">33</span><span class="w"> </span><span class="c1">// Defining the boundary conditions to be applied over time</span>
+<span class="linenos">34</span><span class="w"> </span><span class="nt">&quot;stages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="linenos">35</span><span class="w">     </span><span class="p">{</span>
+<span class="linenos">36</span><span class="w">         </span><span class="nt">&quot;end_time&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">37</span><span class="w">         </span><span class="nt">&quot;time_increment_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="linenos">38</span><span class="w">         </span><span class="nt">&quot;dirichlet_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="linenos">39</span><span class="w">              </span><span class="p">{</span>
+<span class="linenos">40</span><span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Either &quot;standard&quot; or &quot;pull_twist&quot;</span>
+<span class="linenos">41</span><span class="w">                  </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="c1">// The id of the boundary to which this condition applies</span>
+<span class="linenos">42</span><span class="w">                  </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="c1">// The components (0-&gt;x, 1-&gt;y, 2-&gt;z) of the displacement to be prescribed.</span>
+<span class="linenos">43</span><span class="w">                  </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="c1">// The values of the prescribed displacement. Must have the same number of entries as &quot;components&quot;</span>
+<span class="linenos">44</span><span class="w">              </span><span class="p">},</span>
+<span class="linenos">45</span><span class="w">              </span><span class="p">{</span>
+<span class="linenos">46</span><span class="w">                  </span><span class="c1">// Similar to above</span>
+<span class="linenos">47</span><span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="linenos">48</span><span class="w">                  </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="linenos">49</span><span class="w">                  </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+<span class="linenos">50</span><span class="w">                  </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">51</span><span class="w">              </span><span class="p">},</span>
+<span class="linenos">52</span><span class="w">              </span><span class="p">{</span>
+<span class="linenos">53</span><span class="w">                  </span><span class="c1">// Similar to above</span>
+<span class="linenos">54</span><span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="linenos">55</span><span class="w">                  </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="linenos">56</span><span class="w">                  </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+<span class="linenos">57</span><span class="w">                  </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">58</span><span class="w">              </span><span class="p">},</span>
+<span class="linenos">59</span><span class="w">              </span><span class="p">{</span>
+<span class="linenos">60</span><span class="w">                  </span><span class="c1">// Similar to above</span>
+<span class="linenos">61</span><span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="linenos">62</span><span class="w">                  </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="linenos">63</span><span class="w">                  </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">],</span>
+<span class="linenos">64</span><span class="w">                  </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">65</span><span class="w">              </span><span class="p">}</span>
+<span class="linenos">66</span><span class="w">         </span><span class="p">],</span>
+<span class="linenos">67</span><span class="w">         </span><span class="nt">&quot;neumann_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="linenos">68</span><span class="w">         </span><span class="nt">&quot;robin_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="linenos">69</span><span class="w">     </span><span class="p">}</span>
+<span class="linenos">70</span><span class="w"> </span><span class="p">],</span>
+<span class="linenos">71</span><span class="w"> </span><span class="c1">// Defining the fields to be output</span>
+<span class="linenos">72</span><span class="w"> </span><span class="nt">&quot;outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos">73</span><span class="w">      </span><span class="nt">&quot;scalar_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;I1&quot;</span><span class="p">],</span><span class="w"> </span><span class="c1">// Scalar fields to output (here I1=\tr(C))</span>
+<span class="linenos">74</span><span class="w">      </span><span class="nt">&quot;vector_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="c1">// Vector fields to output</span>
+<span class="linenos">75</span><span class="w">      </span><span class="nt">&quot;tensor_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;kirchhoff_stress&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;C&quot;</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1">// Tensor fields to output</span>
+<span class="linenos">76</span><span class="w">  </span><span class="p">}</span>
+<span class="linenos">77</span><span class="w"> </span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="running-the-simulation">
+<h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Link to this heading"></a></h2>
+<p>If you are using docker, you can run the example by going to the directory containing the input file and running</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span>./:/data<span class="w"> </span>-w<span class="w"> </span>/data<span class="w"> </span>commetcode/commet_solve<span class="w"> </span>mpirun<span class="w"> </span>-n<span class="w"> </span>&lt;n_procs_to_use&gt;<span class="w"> </span>commet_solve<span class="w"> </span>hello_world.jsonc
+</pre></div>
+</div>
+<p>If, instead, you have build COMMET locally and it is in your path, you can run</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mpirun<span class="w"> </span>-np<span class="w"> </span>&lt;n_procs_to_use&gt;<span class="w"> </span>commet_solve<span class="w"> </span>hello_world.jsonc
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../using_torchscript/using_torchscript.html" class="btn btn-neutral float-right" title="Defining material models using Pytorch" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Benjamin Alheit &amp; Mathias Peirlinck &amp; Sid Kumar .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

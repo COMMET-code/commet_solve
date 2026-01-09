@@ -1,0 +1,436 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A first NCM &mdash; COMMET solve 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=52f73200" />
+
+  
+    <link rel="shortcut icon" href="../../_static/logo-icon.svg"/>
+    <link rel="canonical" href="https://commet-code.github.io/commet_solve/examples/a_first_ncm_wilin/a_first_ncm.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            COMMET solve
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../manual/manual.html">Manual</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">COMMET solve</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">A first NCM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/a_first_ncm_wilin/a_first_ncm.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="a-first-ncm">
+<h1>A first NCM<a class="headerlink" href="#a-first-ncm" title="Link to this heading"></a></h1>
+<p>COMMET allows for the use of material models implemented using pytorch.
+This is done by using <em>torchscript</em> (see <a href="#id2"><span class="problematic" id="id3">`Torchscript docs`_</span></a>).</p>
+<p>The learning outcomes are as follows:</p>
+<ul class="simple">
+<li><p>How to define a model using Pytorch that can later be used in a COMMET simulation.</p></li>
+<li><p>How to export a Pytorch model using torchscript.</p></li>
+<li><p>How to read a torchscript file into a commet simulation.</p></li>
+</ul>
+<section id="example-files">
+<h2>Example files<a class="headerlink" href="#example-files" title="Link to this heading"></a></h2>
+<p>The files for running the example can be downloaded as a single zip file <a class="reference external" href="../../_static/using_torchscript.zip">here</a>
+and it contains the following files:</p>
+<div class="line-block">
+<div class="line">.</div>
+<div class="line">├── nh.torchscript</div>
+<div class="line">├── nh_torchscript_model.py</div>
+<div class="line">└── using_torchscript.jsonc</div>
+</div>
+</section>
+<section id="problem-definition">
+<h2>Problem definition<a class="headerlink" href="#problem-definition" title="Link to this heading"></a></h2>
+<p>The problem definition is identical to the Hello World example (see <a class="reference internal" href="../hello_world/hello_world.html#helloworld"><span class="std std-ref">Hello world: running a simulation without an NCM</span></a>).
+However, we will implement the Neohookean material model in Python using Pytorch, export the model as torchscript, and read in the model in the COMMET solver.</p>
+</section>
+<section id="defining-a-material-model-using-pytorch">
+<h2>Defining a material model using Pytorch<a class="headerlink" href="#defining-a-material-model-using-pytorch" title="Link to this heading"></a></h2>
+<p>We assume that a reader has some prior experience with Pytorch, in particular, one needs to be able to construct neural networks using Pytorch (see, e.g. <a href="#id4"><span class="problematic" id="id5">`Creating an NN in using Pytorch`_</span></a>).
+To implement a material model with Pytorch for later use in COMMET one must write a class that inherits from <code class="code docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>.
+That class will then be serialized into a torchscript file which will later be read into COMMET.
+When the model is read in, COMMET will search for one of several possible methods of the class which ultimately define the material behaviour – it is important that one of these methods is defined otherwise COMMET will not know where to look for the definition of the material behaviour.
+These methods, with their signatures, are as displayed in the following code listing.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span> <span class="kn">import</span> <span class="nn">torch</span>
+<span class="linenos"> 2</span> <span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="linenos"> 3</span>
+<span class="linenos"> 4</span> <span class="k">class</span> <span class="nc">YourMaterialModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="linenos"> 5</span>     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+<span class="linenos"> 6</span>         <span class="o">...</span>
+<span class="linenos"> 7</span>
+<span class="linenos"> 8</span>     <span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">export</span>
+<span class="linenos"> 9</span>     <span class="k">def</span> <span class="nf">W_NN_from_C</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos">10</span>                     <span class="n">C</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="linenos">11</span>                     <span class="n">structural_vectors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="linenos">12</span><span class="w">         </span><span class="sd">&quot;&quot;&quot;Returns the strain energy density for a given right Cauchy-Green tensor and structural vectors.</span>
+<span class="linenos">13</span><span class="sd">         ***Important***: COMMET takes advantage of symmetries in the right Cauchy-Green tensor when applying AD to calculate the stress and stiffness.</span>
+<span class="linenos">14</span><span class="sd">         In order for this to work correctly, it is important that the first line of this method is:</span>
+<span class="linenos">15</span><span class="sd">             C = 0.5*(C + C.transpose(1, 2))</span>
+<span class="linenos">16</span>
+<span class="linenos">17</span>
+<span class="linenos">18</span><span class="sd">         Parameters</span>
+<span class="linenos">19</span><span class="sd">         ----------</span>
+<span class="linenos">20</span><span class="sd">         C : torch.Tensor</span>
+<span class="linenos">21</span><span class="sd">             **shape (batch size, 3, 3)** Right Cauchy-Green tensors.</span>
+<span class="linenos">22</span><span class="sd">         structural_vectors : torch.Tensor</span>
+<span class="linenos">23</span><span class="sd">             **shape (batch size, number of structural vectors, 3)**</span>
+<span class="linenos">24</span>
+<span class="linenos">25</span><span class="sd">         Returns</span>
+<span class="linenos">26</span><span class="sd">         -------</span>
+<span class="linenos">27</span><span class="sd">         torch.Tensor</span>
+<span class="linenos">28</span><span class="sd">             **shape (batch size)** strain energy density</span>
+<span class="linenos">29</span>
+<span class="linenos">30</span><span class="sd">         &quot;&quot;&quot;</span>
+<span class="linenos">31</span>         <span class="n">C</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="n">C</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="c1"># !!! This is required for the autograd to pick-up the symmetries correctly !!!</span>
+<span class="linenos">32</span>         <span class="o">...</span>
+<span class="linenos">33</span>
+<span class="linenos">34</span>     <span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">export</span>
+<span class="linenos">35</span>     <span class="k">def</span> <span class="nf">W_NN_from_F</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos">36</span>                     <span class="n">F</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="linenos">37</span>                     <span class="n">structural_vectors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="linenos">38</span><span class="w">         </span><span class="sd">&quot;&quot;&quot;Returns the strain energy density for a given deformation gradient and structural vectors.</span>
+<span class="linenos">39</span>
+<span class="linenos">40</span><span class="sd">         Parameters</span>
+<span class="linenos">41</span><span class="sd">         ----------</span>
+<span class="linenos">42</span><span class="sd">         F : torch.Tensor</span>
+<span class="linenos">43</span><span class="sd">             **shape (batch size, 3, 3)** Deformation gradients.</span>
+<span class="linenos">44</span><span class="sd">         structural_vectors : torch.Tensor</span>
+<span class="linenos">45</span><span class="sd">             **shape (batch size, number of structural vectors, 3)**</span>
+<span class="linenos">46</span>
+<span class="linenos">47</span><span class="sd">         Returns</span>
+<span class="linenos">48</span><span class="sd">         -------</span>
+<span class="linenos">49</span><span class="sd">         torch.Tensor</span>
+<span class="linenos">50</span><span class="sd">             **shape (batch size)** strain energy density</span>
+<span class="linenos">51</span>
+<span class="linenos">52</span><span class="sd">         &quot;&quot;&quot;</span>
+<span class="linenos">53</span>         <span class="o">...</span>
+<span class="linenos">54</span>
+<span class="linenos">55</span>     <span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">export</span>
+<span class="linenos">56</span>     <span class="k">def</span> <span class="nf">psi_tau_cc_from_F</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos">57</span>                           <span class="n">F</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="linenos">58</span>                           <span class="n">structural_tensors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="linenos">59</span><span class="w">             </span><span class="sd">&quot;&quot;&quot;Returns the strain energy density, Kirchhoff stress, and spatial stiffness tensor in Voigt notation for a given deformation gradient and structural vectors.</span>
+<span class="linenos">60</span><span class="sd">             The Voigt notation ordering is as follows (zero indexed):</span>
+<span class="linenos">61</span><span class="sd">             vgt = [</span>
+<span class="linenos">62</span><span class="sd">                 (0, 0),</span>
+<span class="linenos">63</span><span class="sd">                 (1, 1),</span>
+<span class="linenos">64</span><span class="sd">                 (2, 2),</span>
+<span class="linenos">65</span><span class="sd">                 (1, 2),</span>
+<span class="linenos">66</span><span class="sd">                 (0, 2),</span>
+<span class="linenos">67</span><span class="sd">                 (0, 1)</span>
+<span class="linenos">68</span><span class="sd">                 ]</span>
+<span class="linenos">69</span>
+<span class="linenos">70</span><span class="sd">             Parameters</span>
+<span class="linenos">71</span><span class="sd">             ----------</span>
+<span class="linenos">72</span><span class="sd">             F : torch.Tensor</span>
+<span class="linenos">73</span><span class="sd">                 **shape (batch size, 3, 3)** Deformation gradients.</span>
+<span class="linenos">74</span><span class="sd">             structural_vectors : torch.Tensor</span>
+<span class="linenos">75</span><span class="sd">                 **shape (batch size, number of structural vectors, 3)**</span>
+<span class="linenos">76</span>
+<span class="linenos">77</span><span class="sd">             Returns</span>
+<span class="linenos">78</span><span class="sd">             -------</span>
+<span class="linenos">79</span><span class="sd">             torch.Tensor</span>
+<span class="linenos">80</span><span class="sd">                 **shape (batch size)** strain energy density</span>
+<span class="linenos">81</span><span class="sd">             torch.Tensor</span>
+<span class="linenos">82</span><span class="sd">                 **shape (batch size, 6)** Kirchhoff stress (2 F d\Psi/dC F^T) in Voigt notation</span>
+<span class="linenos">83</span><span class="sd">             torch.Tensor</span>
+<span class="linenos">84</span><span class="sd">                 **shape (batch size, 6, 6)** Spatial stiffness tensor (4 d\Psi/(dC_{IJ} dC_{KL} ) F_{iI}F_{jJ}F_{kK}F_{lL}) in Voigt notation</span>
+<span class="linenos">85</span>
+<span class="linenos">86</span><span class="sd">             &quot;&quot;&quot;</span>
+<span class="linenos">87</span>             <span class="o">...</span>
+</pre></div>
+</div>
+<p>You may note that the methods <code class="code docutils literal notranslate"><span class="pre">W_NN_from_F</span></code> and <code class="code docutils literal notranslate"><span class="pre">W_NN_from_C</span></code> only require calculation of the strain energy density, whereas <code class="code docutils literal notranslate"><span class="pre">psi_tau_cc_from_F</span></code> also requires calculation of the stress and stiffness.
+This is because, if <code class="code docutils literal notranslate"><span class="pre">W_NN_from_F</span></code> or <code class="code docutils literal notranslate"><span class="pre">W_NN_from_C</span></code> is used, COMMET will use automatic differentiation (AD) to calculate the stress and stiffness.
+In contrast, the method <code class="code docutils literal notranslate"><span class="pre">psi_tau_cc_from_F</span></code> allows a user to implement the necessary derivatives themself, which may be more efficient than using AD.
+The decorators <code class="code docutils literal notranslate"><span class="pre">&#64;torch.jit.export</span></code> are required to indicate that Pytorch must include these methods when generating the torchscript file (we’ll show how this is done below).
+Finally, note that a user only needs to implement one of these methods, not all of them.</p>
+<p>Below we show a full example of how to implement a simple Neohookean model using Pytorch and export an associated torchscript file – this is the contents of <code class="code docutils literal notranslate"><span class="pre">nh_torchscript_model.py</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="linenos"> 2</span><span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="linenos"> 3</span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="linenos"> 4</span>
+<span class="linenos"> 5</span>
+<span class="linenos"> 6</span><span class="k">class</span> <span class="nc">NH</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="linenos"> 7</span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos"> 8</span>                 <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos"> 9</span>                 <span class="n">lam</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="linenos">10</span>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<span class="linenos">11</span>        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">([</span><span class="n">mu</span><span class="p">]))</span>
+<span class="linenos">12</span>        <span class="bp">self</span><span class="o">.</span><span class="n">lam</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">([</span><span class="n">lam</span><span class="p">]))</span>
+<span class="linenos">13</span>
+<span class="linenos">14</span>    <span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">export</span>
+<span class="linenos">15</span>    <span class="k">def</span> <span class="nf">W_NN_from_C</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos">16</span>                    <span class="n">C</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span> <span class="n">Tensor</span><span class="p">,</span>
+<span class="linenos">17</span>                    <span class="n">structural_vectors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="linenos">18</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the strain energy density for a given right Cauchy-Green tensor and structural vectors.</span>
+<span class="linenos">19</span>
+<span class="linenos">20</span><span class="sd">        Parameters</span>
+<span class="linenos">21</span><span class="sd">        ----------</span>
+<span class="linenos">22</span><span class="sd">        C : torch.Tensor</span>
+<span class="linenos">23</span><span class="sd">            **shape (batch size, 3, 3)** Right Cauchy-Green tensors.</span>
+<span class="linenos">24</span><span class="sd">        structural_vectors : torch.Tensor</span>
+<span class="linenos">25</span><span class="sd">            **shape (batch size, number of structural vectors, 3)**</span>
+<span class="linenos">26</span>
+<span class="linenos">27</span><span class="sd">        Returns</span>
+<span class="linenos">28</span><span class="sd">        -------</span>
+<span class="linenos">29</span><span class="sd">        torch.Tensor</span>
+<span class="linenos">30</span><span class="sd">            **shape (batch size)** strain energy density</span>
+<span class="linenos">31</span>
+<span class="linenos">32</span><span class="sd">        &quot;&quot;&quot;</span>
+<span class="linenos">33</span>
+<span class="linenos">34</span>        <span class="n">C</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="n">C</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="c1"># !!! This is required for the autograd to pick-up the symmetries correctly !!!</span>
+<span class="linenos">35</span>
+<span class="linenos">36</span>        <span class="n">I1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">C</span><span class="p">[:,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="linenos">37</span>        <span class="n">I3</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+<span class="linenos">38</span>        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">*</span> <span class="p">(</span><span class="n">I1</span> <span class="o">-</span> <span class="mi">3</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">I3</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">lam</span> <span class="o">*</span> <span class="p">(</span><span class="n">I3</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">I3</span><span class="p">))</span>
+<span class="linenos">39</span>
+<span class="linenos">40</span>    <span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">export</span>
+<span class="linenos">41</span>    <span class="k">def</span> <span class="nf">W_NN_from_F</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos">42</span>                    <span class="n">F</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="linenos">43</span>                    <span class="n">structural_vectors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="linenos">44</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the strain energy density for a given deformation gradient and structural vectors.</span>
+<span class="linenos">45</span>
+<span class="linenos">46</span><span class="sd">        Parameters</span>
+<span class="linenos">47</span><span class="sd">        ----------</span>
+<span class="linenos">48</span><span class="sd">        F : torch.Tensor</span>
+<span class="linenos">49</span><span class="sd">            **shape (batch size, 3, 3)** Deformation gradients.</span>
+<span class="linenos">50</span><span class="sd">        structural_vectors : torch.Tensor</span>
+<span class="linenos">51</span><span class="sd">            **shape (batch size, number of structural vectors, 3)**</span>
+<span class="linenos">52</span>
+<span class="linenos">53</span><span class="sd">        Returns</span>
+<span class="linenos">54</span><span class="sd">        -------</span>
+<span class="linenos">55</span><span class="sd">        torch.Tensor</span>
+<span class="linenos">56</span><span class="sd">            **shape (batch size)** strain energy density</span>
+<span class="linenos">57</span>
+<span class="linenos">58</span><span class="sd">        &quot;&quot;&quot;</span>
+<span class="linenos">59</span>
+<span class="linenos">60</span>        <span class="n">C</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bmm</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">F</span><span class="p">)</span>
+<span class="linenos">61</span>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">W_NN_from_C</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">structural_vectors</span><span class="p">)</span>
+<span class="linenos">62</span>
+<span class="linenos">63</span>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos">64</span>                <span class="n">F</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="linenos">65</span>                <span class="n">structural_vectors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="linenos">66</span>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">W_NN_from_F</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">structural_vectors</span><span class="p">)</span>
+<span class="linenos">67</span>
+<span class="linenos">68</span>
+<span class="linenos">69</span><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="linenos">70</span>    <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">77</span>
+<span class="linenos">71</span>    <span class="n">lam</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">115</span>
+<span class="linenos">72</span>    <span class="n">nh</span><span class="p">:</span> <span class="n">NH</span> <span class="o">=</span> <span class="n">NH</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">lam</span><span class="p">)</span>
+<span class="linenos">73</span>
+<span class="linenos">74</span>    <span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="linenos">75</span>    <span class="n">F_mat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+<span class="linenos">76</span>
+<span class="linenos">77</span>    <span class="n">traced</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">nh</span><span class="p">,</span> <span class="p">(</span><span class="n">F_mat</span><span class="p">,</span> <span class="p">))</span>
+<span class="linenos">78</span>    <span class="n">traced</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;nh.torchscript&quot;</span><span class="p">)</span>
+<span class="linenos">79</span>
+<span class="linenos">80</span>
+<span class="linenos">81</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="linenos">82</span>    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The above example also demonstrates how the model is converted to torchscript, i.e. the model and some example input is provided to <code class="code docutils literal notranslate"><span class="pre">torch.jit.trace</span></code>, and the traced output is written to file using the <code class="code docutils literal notranslate"><span class="pre">save</span></code> method.
+It is important that the <code class="code docutils literal notranslate"><span class="pre">forward</span></code> method is defined for the model since this is the default entry point for the <code class="code docutils literal notranslate"><span class="pre">torch.jit.trace</span></code> function.
+Next we’ll show how to use this in a COMMET simulation.</p>
+</section>
+<section id="the-input-file">
+<h2>The input file<a class="headerlink" href="#the-input-file" title="Link to this heading"></a></h2>
+<p>Since the problem definition is identical to the Hello World example (see <a class="reference internal" href="../hello_world/hello_world.html#helloworld"><span class="std std-ref">Hello world: running a simulation without an NCM</span></a>), the input file is largely the same.
+The only difference is the material definition.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Content of using_torchscript.jsonc</span><a class="headerlink" href="#id1" title="Link to this code"></a></div>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos"> 2</span><span class="w">     </span><span class="c1">// Defining the mesh</span>
+<span class="linenos"> 3</span><span class="w">     </span><span class="nt">&quot;mesh&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos"> 4</span><span class="w">         </span><span class="c1">// Indicating that we will use a built-in mesh (not reading one in from file)</span>
+<span class="linenos"> 5</span><span class="w">         </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;built-in&quot;</span><span class="p">,</span>
+<span class="linenos"> 6</span><span class="w">         </span><span class="c1">// The type of built-in mesh that we will use</span>
+<span class="linenos"> 7</span><span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quarter_plate_with_hole&quot;</span><span class="p">,</span>
+<span class="linenos"> 8</span><span class="w">         </span><span class="c1">// The order of the finite elements to use</span>
+<span class="linenos"> 9</span><span class="w">         </span><span class="nt">&quot;order&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">10</span><span class="w">         </span><span class="c1">// Radius of the hole in the plate</span>
+<span class="linenos">11</span><span class="w">         </span><span class="nt">&quot;radius&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span>
+<span class="linenos">12</span><span class="w">         </span><span class="c1">// Length of the plate</span>
+<span class="linenos">13</span><span class="w">         </span><span class="nt">&quot;length&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">14</span><span class="w">         </span><span class="c1">// Thickness of the plate</span>
+<span class="linenos">15</span><span class="w">         </span><span class="nt">&quot;thickness&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="linenos">16</span><span class="w">         </span><span class="c1">// The number of times to refine the mesh of the geometry in-plane</span>
+<span class="linenos">17</span><span class="w">         </span><span class="nt">&quot;planar_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">18</span><span class="w">         </span><span class="c1">// The number of times to refine the mesh of the geometry globally (through the thickness and in-plane)</span>
+<span class="linenos">19</span><span class="w">         </span><span class="nt">&quot;global_refinements&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="linenos">20</span><span class="w">     </span><span class="p">},</span>
+<span class="linenos">21</span><span class="w">     </span><span class="c1">// Defining the materials</span>
+<span class="linenos">22</span><span class="w">     </span><span class="nt">&quot;materials&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="linenos">23</span><span class="w">         </span><span class="p">{</span>
+<span class="linenos">24</span><span class="w">             </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="linenos">25</span><span class="w">             </span><span class="c1">// Technically, NCM stands for &quot;neural constitutive network&quot;.</span>
+<span class="linenos">26</span><span class="w">             </span><span class="c1">// This just indicates to commet_solve that the model must be loaded from torchscript.</span>
+<span class="linenos">27</span><span class="w">             </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ncm&quot;</span><span class="p">,</span>
+<span class="linenos">28</span><span class="w">             </span><span class="nt">&quot;vectorization&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;batched&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// batched | global</span>
+<span class="linenos">29</span><span class="w">             </span><span class="nt">&quot;batch_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">512</span><span class="p">,</span><span class="w"> </span><span class="c1">// must be defined if &quot;vectorization&quot;: &quot;batched&quot;</span>
+<span class="linenos">30</span><span class="w">             </span><span class="nt">&quot;evaluation_method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;using_C&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// &quot;optimized&quot; | &quot;using_F&quot; | &quot;using_C&quot;</span>
+<span class="linenos">31</span><span class="w">             </span><span class="nt">&quot;path_to_torchscript&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nh.torchscript&quot;</span>
+<span class="linenos">32</span><span class="w">         </span><span class="p">}</span>
+<span class="linenos">33</span><span class="w">     </span><span class="p">],</span>
+<span class="linenos">34</span><span class="w">     </span><span class="c1">// Defining the boundary conditions to be applied over time</span>
+<span class="linenos">35</span><span class="w">     </span><span class="nt">&quot;stages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="linenos">36</span><span class="w">         </span><span class="p">{</span>
+<span class="linenos">37</span><span class="w">             </span><span class="nt">&quot;end_time&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">38</span><span class="w">             </span><span class="nt">&quot;time_increment_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="linenos">39</span><span class="w">             </span><span class="nt">&quot;dirichlet_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="linenos">40</span><span class="w">                  </span><span class="p">{</span>
+<span class="linenos">41</span><span class="w">                      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Either &quot;standard&quot; or &quot;pull_twist&quot;</span>
+<span class="linenos">42</span><span class="w">                      </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="c1">// The id of the boundary to which this condition applies</span>
+<span class="linenos">43</span><span class="w">                      </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="c1">// The components (0-&gt;x, 1-&gt;y, 2-&gt;z) of the displacement to be prescribed.</span>
+<span class="linenos">44</span><span class="w">                      </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="c1">// The values of the prescribed displacement. Must have the same number of entries as &quot;components&quot;</span>
+<span class="linenos">45</span><span class="w">                  </span><span class="p">},</span>
+<span class="linenos">46</span><span class="w">                  </span><span class="p">{</span>
+<span class="linenos">47</span><span class="w">                      </span><span class="c1">// Similar to above</span>
+<span class="linenos">48</span><span class="w">                      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="linenos">49</span><span class="w">                      </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="linenos">50</span><span class="w">                      </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+<span class="linenos">51</span><span class="w">                      </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">52</span><span class="w">                  </span><span class="p">},</span>
+<span class="linenos">53</span><span class="w">                  </span><span class="p">{</span>
+<span class="linenos">54</span><span class="w">                      </span><span class="c1">// Similar to above</span>
+<span class="linenos">55</span><span class="w">                      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="linenos">56</span><span class="w">                      </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="linenos">57</span><span class="w">                      </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+<span class="linenos">58</span><span class="w">                      </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">59</span><span class="w">                  </span><span class="p">},</span>
+<span class="linenos">60</span><span class="w">                  </span><span class="p">{</span>
+<span class="linenos">61</span><span class="w">                      </span><span class="c1">// Similar to above</span>
+<span class="linenos">62</span><span class="w">                      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+<span class="linenos">63</span><span class="w">                      </span><span class="nt">&quot;boundary_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="linenos">64</span><span class="w">                      </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">],</span>
+<span class="linenos">65</span><span class="w">                      </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">66</span><span class="w">                  </span><span class="p">}</span>
+<span class="linenos">67</span><span class="w">             </span><span class="p">],</span>
+<span class="linenos">68</span><span class="w">             </span><span class="nt">&quot;neumann_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="linenos">69</span><span class="w">             </span><span class="nt">&quot;robin_boundary_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="linenos">70</span><span class="w">         </span><span class="p">}</span>
+<span class="linenos">71</span><span class="w">     </span><span class="p">],</span>
+<span class="linenos">72</span><span class="w">     </span><span class="c1">// Defining the fields to be output</span>
+<span class="linenos">73</span><span class="w">     </span><span class="nt">&quot;outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos">74</span><span class="w">          </span><span class="nt">&quot;scalar_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;I1&quot;</span><span class="p">],</span><span class="w"> </span><span class="c1">// Scalar fields to output (here I1=\tr(C))</span>
+<span class="linenos">75</span><span class="w">          </span><span class="nt">&quot;vector_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="c1">// Vector fields to output</span>
+<span class="linenos">76</span><span class="w">          </span><span class="nt">&quot;tensor_outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;kirchhoff_stress&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;C&quot;</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1">// Tensor fields to output</span>
+<span class="linenos">77</span><span class="w">      </span><span class="p">}</span>
+<span class="linenos">78</span><span class="w"> </span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>The details of the of defining the material behaviour are as follows:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;type&quot;:</span> <span class="pre">&quot;ncm&quot;</span></code> Setting <code class="code docutils literal notranslate"><span class="pre">type</span></code> to code:<cite>”ncm”</cite> indicates to COMMET that the material model must be read in from torchscript</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;vectorization&quot;:</span> <span class="pre">&quot;batched&quot;</span></code> If the model is read in from torchscript, COMMET uses vectorization to execute constitutive updates for multiple material points simultaneously, i.e. it uses vectorization. A user can choose whether that vectorization is applied globally, i.e. all material points are processed simultaneously, or in batches of a fixed size. In brief, using batched vectorization tends to be faster and more memory efficient than global vectorization. For more details see the <a href="#id6"><span class="problematic" id="id7">`COMMET paper`_</span></a>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">512</span></code> If batch vectorization is chosen over global vectorization then the batch size (i.e. the number of material points to process simultaneously) must also be chosen. The most efficient batch size will likely vary from one problem to another. However, a batch size of 512 or 1024 is typically a good choice. Again, see the <a href="#id8"><span class="problematic" id="id9">`COMMET paper`_</span></a> for more details.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;evaluation_method&quot;:</span> <span class="pre">&quot;using_C&quot;</span></code> This is where we tell COMMET which method to use when computing the constitutive update:</p>
+<ul>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;using_F&quot;</span></code> -&gt; <code class="code docutils literal notranslate"><span class="pre">W_NN_from_F</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;using_C&quot;</span></code> -&gt; <code class="code docutils literal notranslate"><span class="pre">W_NN_from_C</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;optimized&quot;</span></code> -&gt; <code class="code docutils literal notranslate"><span class="pre">psi_tau_cc_from_F</span></code></p></li>
+</ul>
+</li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&quot;path_to_torchscript&quot;:</span> <span class="pre">&quot;nh.torchscript&quot;</span></code> As you might expect, this is just the path to the torchscript file that must be read in.</p></li>
+</ul>
+</section>
+<section id="running-the-simulation">
+<h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Link to this heading"></a></h2>
+<p>If you are using docker, you can run the example by going to the directory containing the input file and running</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span>./:/data<span class="w"> </span>-w<span class="w"> </span>/data<span class="w"> </span>benalheit/commet<span class="w"> </span>mpirun<span class="w"> </span>-n<span class="w"> </span>&lt;n_procs_to_use&gt;<span class="w"> </span>commet_solve<span class="w"> </span>using_torchscript.jsonc
+</pre></div>
+</div>
+<p>If, instead, you have build COMMET locally and it is in your path, you can run</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mpirun<span class="w"> </span>-np<span class="w"> </span>&lt;n_procs_to_use&gt;<span class="w"> </span>commet_solve<span class="w"> </span>using_torchscript.jsonc
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Benjamin Alheit &amp; Mathias Peirlinck &amp; Sid Kumar .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

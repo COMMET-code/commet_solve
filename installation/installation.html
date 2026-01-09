@@ -57,7 +57,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../manual/manual.html">Manual</a></li>
 </ul>
 
         </div>
@@ -94,8 +93,8 @@
 <p>First install docker by following the directions at <a class="reference external" href="https://docs.docker.com/engine/install/">Docker engine install</a> or <a class="reference external" href="https://docs.docker.com/desktop/setup/install/windows-install/">Docker desktop install</a>.</p>
 <section id="get-the-image">
 <h3>Get the image<a class="headerlink" href="#get-the-image" title="Link to this heading"></a></h3>
-<p>From the terminal, you will be able to pull the docker image from <a class="reference external" href="https://hub.docker.com/repository/docker/benalheit/commet/general">Docker hub</a> using the following command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>pull<span class="w"> </span>benalheit/commet
+<p>From the terminal, you will be able to pull the docker image from <a class="reference external" href="https://hub.docker.com/repository/docker/commetcode/commet_solve">Docker hub</a> using the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>pull<span class="w"> </span>commetcode/commet_solve
 </pre></div>
 </div>
 <p>That’s it, you now have COMMET installed.</p>
@@ -105,7 +104,7 @@
 <p>To verify that the installation is working, you can download an example and run it.
 To run an example, open a terminal in a directory where the files for the example are located.
 Then run the following command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span>./:/data<span class="w"> </span>-w<span class="w"> </span>/data<span class="w"> </span>benalheit/commet<span class="w"> </span>mpirun<span class="w"> </span>-n<span class="w"> </span>&lt;n_procs_to_use&gt;<span class="w"> </span>commet_solve<span class="w"> </span>&lt;example_input_file&gt;
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span>./:/data<span class="w"> </span>-w<span class="w"> </span>/data<span class="w"> </span>commetcode/commet_solve<span class="w"> </span>mpirun<span class="w"> </span>-n<span class="w"> </span>&lt;n_procs_to_use&gt;<span class="w"> </span>commet_solve<span class="w"> </span>&lt;example_input_file&gt;
 </pre></div>
 </div>
 <p>This slightly long command starts up a docker container with the following settings:</p>
@@ -113,7 +112,7 @@ Then run the following command:</p>
 <li><p><code class="code docutils literal notranslate"><span class="pre">--rm</span></code> removes the container after it finishes running – this keeps things tidy.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">-v</span> <span class="pre">./:data</span></code> mounts the current directory on your machine <code class="code docutils literal notranslate"><span class="pre">./</span></code> to a directory in the container <code class="code docutils literal notranslate"><span class="pre">/data</span></code></p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">-w</span> <span class="pre">/data</span></code> sets the working directory inside the container to <code class="code docutils literal notranslate"><span class="pre">/data</span></code></p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">benalheit/commet</span></code> is the image from which Docker will create the container</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">commetcode/commet_solve</span></code> is the image from which Docker will create the container</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">mpirun</span> <span class="pre">-n</span> <span class="pre">2</span> <span class="pre">commet_solve</span> <span class="pre">&lt;example_input_file&gt;</span></code> is the command that will be run once the docker container has started up (and has changed directory to <code class="code docutils literal notranslate"><span class="pre">/data</span></code>)</p></li>
 </ul>
 </section>

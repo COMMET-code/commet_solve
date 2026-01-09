@@ -6,7 +6,7 @@ Installation
 
 .. _Docker desktop install: https://docs.docker.com/desktop/setup/install/windows-install/
 
-.. _Docker hub: https://hub.docker.com/repository/docker/benalheit/commet/general
+.. _Docker hub: https://hub.docker.com/repository/docker/commetcode/commet_solve
 
 .. _COMMET Github repo: https://github.com/COMMET-code/commet_solve
 
@@ -28,7 +28,7 @@ From the terminal, you will be able to pull the docker image from `Docker hub`_ 
 
 .. code-block:: console
 
-   $ docker pull benalheit/commet
+   $ docker pull commetcode/commet_solve
 
 That's it, you now have COMMET installed. 
 
@@ -41,14 +41,14 @@ Then run the following command:
 
 .. code-block:: console
 
-   $ docker run --rm -v ./:/data -w /data benalheit/commet mpirun -n <n_procs_to_use> commet_solve <example_input_file>
+   $ docker run --rm -v ./:/data -w /data commetcode/commet_solve mpirun -n <n_procs_to_use> commet_solve <example_input_file>
 
 This slightly long command starts up a docker container with the following settings:
 
 * :code:`--rm` removes the container after it finishes running -- this keeps things tidy.
 * :code:`-v ./:data` mounts the current directory on your machine :code:`./` to a directory in the container :code:`/data`
 * :code:`-w /data` sets the working directory inside the container to :code:`/data`
-* :code:`benalheit/commet` is the image from which Docker will create the container
+* :code:`commetcode/commet_solve` is the image from which Docker will create the container
 * :code:`mpirun -n 2 commet_solve <example_input_file>` is the command that will be run once the docker container has started up (and has changed directory to :code:`/data`) 
 
 
