@@ -5,7 +5,9 @@ Examples
    :maxdepth: 2
    :caption: Contents: 
 
-   example_1/example_1
+   hello_world/hello_world
+   using_torchscript/using_torchscript
+   a_first_ncm/a_first_ncm
 
 
 

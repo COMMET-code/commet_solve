@@ -1,0 +1,77 @@
+{
+    // Defining the mesh 
+    "mesh": {
+        // Indicating that we will use a built-in mesh (not reading one in from file)
+        "from": "built-in", 
+        // The type of built-in mesh that we will use
+        "type": "quarter_plate_with_hole",
+        // The order of the finite elements to use
+        "order": 1,
+        // Radius of the hole in the plate
+        "radius": 0.2,
+        // Length of the plate
+        "length": 1,
+        // Thickness of the plate
+        "thickness": 0.1,
+        // The number of times to refine the mesh of the geometry in-plane
+        "planar_refinements": 1,
+        // The number of times to refine the mesh of the geometry globally (through the thickness and in-plane)
+        "global_refinements": 1
+    },
+    // Defining the materials
+    "materials": [
+        {
+            "id": 0, // The id of the region for which this material applies
+            "type": "traditional", // Either "traditional" or "ncm"
+            "elasticity": { // Defines the elastic portion of the behaviour
+                "type": "neohookean",
+                "mu": 77,
+                "lambda": 115
+            }
+        }
+    ],
+    // Defining the boundary conditions to be applied over time
+    "stages": [
+        {
+            "end_time": 1,
+            "time_increment_size": 0.1,
+            "dirichlet_boundary_conditions": [
+                 {
+                     "type": "standard", // Either "standard" or "pull_twist"
+                     "boundary_id": 1, // The id of the boundary to which this condition applies
+                     "components": [0], // The components (0->x, 1->y, 2->z) of the displacement to be prescribed.
+                     "values": [0] // The values of the prescribed displacement. Must have the same number of entries as "components"
+                 },
+                 {
+                     // Similar to above
+                     "type": "standard",
+                     "boundary_id": 2,
+                     "components": [1],
+                     "values": [0]
+                 },
+                 {
+                     // Similar to above
+                     "type": "standard",
+                     "boundary_id": 3,
+                     "components": [2],
+                     "values": [0]
+                 },
+                 {
+                     // Similar to above
+                     "type": "standard",
+                     "boundary_id": 4,
+                     "components": [0, 1, 2],
+                     "values": [1, 0, 0]
+                 }
+            ],
+            "neumann_boundary_conditions": [],
+            "robin_boundary_conditions": []
+        }
+    ], 
+    // Defining the fields to be output
+    "outputs": {
+         "scalar_outputs": ["I1"], // Scalar fields to output (here I1=\tr(C))
+         "vector_outputs": [ ], // Vector fields to output
+         "tensor_outputs": ["kirchhoff_stress", "C" ] // Tensor fields to output
+     }
+}

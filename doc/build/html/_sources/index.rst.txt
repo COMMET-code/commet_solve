@@ -8,12 +8,12 @@ As such, the documentation does not provide details of the underlying codebase.
 Rather, it provides details on how to install COMMET solve, examples of how it may be used, and a reference manual specifying the structure and contents of input files to the solver.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Contents: 
 
    installation/installation
    examples/examples
-   manual/manual
+   .. manual/manual
 
 
 

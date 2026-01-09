@@ -38,6 +38,7 @@ RUN cd /home/ubuntu/downloads/candi && git checkout v9.7.0-r1 && mv candi.cfg ca
 COPY ./resources/candi.cfg /home/ubuntu/downloads/candi/candi.cfg
 RUN cd /home/ubuntu/downloads/candi && ./candi.sh -p /home/ubuntu/deal -j 6 -y
 
+RUN rm -rf /home/ubuntu/deal/tmp
 
 RUN mkdir -p /home/ubuntu/commet_solve
 COPY ./external /home/ubuntu/commet_solve/external
@@ -45,6 +46,7 @@ COPY ./include /home/ubuntu/commet_solve/include
 COPY ./src /home/ubuntu/commet_solve/src
 COPY ./CMakeLists.txt /home/ubuntu/commet_solve/CMakeLists.txt
 COPY ./LICENSE /home/ubuntu/commet_solve/LICENSE
+COPY ./benchmark /home/ubuntu/commet_solve/benchmark
 
 SHELL ["/bin/bash", "-c"]
 

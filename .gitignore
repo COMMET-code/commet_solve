@@ -18,10 +18,12 @@ external_builds/
 *.vtk
 mesh_data/
 field_data/
+build/
 **/compute_times.json
 **/commet_solver.log
 **/problem_size.json
 hpc/
+dev_scripts/
 examples/benchmark_examples/torchscripts/
 examples/benchmark_examples/global/input/
 examples/benchmark_examples/global/output/

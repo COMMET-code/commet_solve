@@ -45,15 +45,15 @@ public:
     monitor_thread = std::thread([this, interval_microseconds]() {
       while (running) {
         long rss = get_current_rss();
-        long prev_max = max_rss.load();
+        long prev_max = max_rss_bytes.load();
         while (rss > prev_max &&
-               !max_rss.compare_exchange_weak(prev_max, rss)) {
+               !max_rss_bytes.compare_exchange_weak(prev_max, rss)) {
           // loop until max_rss updated
         }
 
-        long prev_min = min_rss.load();
+        long prev_min = min_rss_bytes.load();
         while (rss < prev_min &&
-               !min_rss.compare_exchange_weak(prev_min, rss)) {
+               !min_rss_bytes.compare_exchange_weak(prev_min, rss)) {
           // loop until min_rss updated
         }
         std::this_thread::sleep_for(

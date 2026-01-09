@@ -176,7 +176,7 @@ class RotateFunctionComponent : public Function<dim, Number>
 	RotateFunctionComponent &operator=(const RotateFunctionComponent &) = delete;
 	~RotateFunctionComponent() = default;
 
-	void set_time(const numbers::NumberTraits<double>::real_type new_time) override
+	void set_time(const dealii::numbers::NumberTraits<double>::real_type new_time) override
 	{
 		Function<dim>::set_time(new_time);
 		rotate_function.set_time(new_time);
