@@ -5,6 +5,6 @@ It is a module that exists as a part of the computational mechanics and machine 
 
 COMMET solve is currently in a beta testing stage.
 
-[Landing page](https://hub.docker.com/repository/docker/commetcode/commet_solve).
-You can find documentation on how to install and use COMMET [here](https://commet-code.github.io/commet_solve/index.html).
+[Landing page](https://hub.docker.com/repository/docker/commetcode/commet_solve).  
+You can find documentation on how to install and use COMMET [here](https://commet-code.github.io/commet_solve/index.html).  
 A ready-to-go docker image is provided on [Docker hub](https://hub.docker.com/repository/docker/commetcode/commet_solve).
